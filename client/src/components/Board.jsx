@@ -1,35 +1,68 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import Card from './Card';
 
-export default function Board({ socket, room, user, myCards }) {
-    // 1. XOAY MẢNG: Bạn luôn ở index 0
+export default function Board({ socket, room, user, myCards, timeLeft }) {
+    const [selectedCards, setSelectedCards] = useState([]);
+    const [hasSkippedSam, setHasSkippedSam] = useState(false);
+
     const myIndex = room.players.findIndex((p) => p.id === user.id);
     const rotatedPlayers = [
         ...room.players.slice(myIndex),
         ...room.players.slice(0, myIndex)
     ];
-    const me = rotatedPlayers[0];
 
-    // 2. THUẬT TOÁN CHIA ĐỀU TRÊN VÒNG TRÒN (Tự động co giãn theo kích thước bàn)
-    const getPlayerPosition = (index, total) => {
-        // Góc bắt đầu 90 độ (6h chiều)
-        const angleDeg = 90 + index * (360 / total);
-        const angleRad = angleDeg * (Math.PI / 180);
+    const isMyTurn = room.currentTurn === user.id && room.status === 'PLAYING';
 
-        // Tọa độ tâm (50%, 50%), bán kính 50%
-        const x = 50 + 50 * Math.cos(angleRad);
-        const y = 50 + 50 * Math.sin(angleRad);
-
-        return { left: `${x}%`, top: `${y}%` };
+    const getPositions = (total) => {
+        const bottomPos = "bottom-[320px] left-1/2 -translate-x-1/2";
+        const layouts = {
+            1: [bottomPos],
+            2: [bottomPos, "top-16 left-1/2 -translate-x-1/2"],
+            3: [bottomPos, "top-24 left-[25%] -translate-x-1/2", "top-24 right-[25%] translate-x-1/2"],
+            4: [bottomPos, "top-[45%] left-4 -translate-y-1/2", "top-16 left-1/2 -translate-x-1/2", "top-[45%] right-4 -translate-y-1/2"],
+            5: [bottomPos, "top-[45%] left-4 -translate-y-1/2", "top-16 left-[30%] -translate-x-1/2", "top-16 right-[30%] translate-x-1/2", "top-[45%] right-4 -translate-y-1/2"]
+        };
+        return layouts[total] || layouts[1];
     };
+    const currentLayout = getPositions(rotatedPlayers.length);
 
     const handleStartGame = () => {
-        if (room.players.length < 2) {
-            toast.error('Cần ít nhất 2 người để bắt đầu!');
-            return;
-        }
+        if (room.players.length < 2) return toast.error('Cần ít nhất 2 người!');
         socket.emit('START_GAME', room.code);
+    };
+
+    const handleRequestSam = () => socket.emit('REQUEST_SAM', room.code);
+
+    useEffect(() => {
+        if (room.status !== 'SAM_WAITING') {
+            setHasSkippedSam(false);
+        }
+    }, [room.status]);
+
+    const handleSkipSam = () => {
+        socket.emit('SKIP_SAM', room.code);
+        setHasSkippedSam(true); // Cập nhật giao diện cá nhân
+    };
+
+    const handlePassTurn = () => {
+        socket.emit('PASS_TURN', room.code);
+        setSelectedCards([]);
+    };
+
+    const handlePlayCards = () => {
+        if (selectedCards.length === 0) return toast.error('Vui lòng chọn bài để đánh!');
+        socket.emit('PLAY_CARDS', { code: room.code, cards: selectedCards });
+        setSelectedCards([]);
+    };
+
+    const toggleCardSelection = (card) => {
+        const isSelected = selectedCards.some(c => c.rank === card.rank && c.suit === card.suit);
+        if (isSelected) {
+            setSelectedCards(prev => prev.filter(c => !(c.rank === card.rank && c.suit === card.suit)));
+        } else {
+            setSelectedCards(prev => [...prev, card]);
+        }
     };
 
     return (
@@ -42,115 +75,165 @@ export default function Board({ socket, room, user, myCards }) {
                     <span className="text-sm text-amber-500 font-black tracking-widest">{room.code}</span>
                 </div>
             </div>
-
             <div className="absolute top-3 right-3 z-50 pointer-events-auto flex items-center gap-2">
                 <div className="bg-zinc-900/50 backdrop-blur border border-zinc-800/50 rounded px-2 py-1 shadow-md">
                     <span className="text-[10px] text-zinc-400">Cược: <span className="text-amber-500 font-bold">{room.settings.bet / 1000}k</span></span>
                 </div>
-                <button onClick={() => window.location.reload()} className="bg-red-900/80 border border-red-700 text-white rounded px-3 py-1 text-[10px] font-bold shadow-md active:scale-95 transition-transform">
+                <button onClick={() => window.location.reload()} className="bg-zinc-800 border border-red-900/50 text-red-500 rounded px-3 py-1 text-[10px] font-bold shadow-md hover:bg-zinc-700 transition-colors">
                     THOÁT
                 </button>
             </div>
 
-            {/* 2. KHU VỰC BÀN TRÒN CHÍNH (ĐÃ ĐƯỢC PHÓNG TO & TỐI ƯU) */}
-            {/* Dùng pb-[200px] để đẩy bàn nhích lên trên một chút, né dãy bài cầm tay */}
-            <div className="flex-1 w-full flex items-center justify-center pb-[200px] sm:pb-[240px] pt-16">
-
-                {/* Kích thước bàn: Rộng 92% màn hình mobile, tối đa 450px. */}
-                <div className="relative w-[92%] max-w-[450px] sm:max-w-[600px] aspect-square bg-zinc-900/40 border-[1.5px] border-zinc-700/50 rounded-full shadow-[inset_0_0_80px_rgba(0,0,0,0.6)] flex items-center justify-center">
-
-                    {/* Logo giữa bàn */}
-                    <div className="w-24 h-24 rounded-full border border-zinc-800 flex items-center justify-center opacity-30 pointer-events-none">
-                        <span className="text-2xl font-black text-amber-500 tracking-widest -rotate-12">VIP</span>
+            {/* 2. RENDER NGƯỜI CHƠI */}
+            {rotatedPlayers.map((player, index) => {
+                const isMe = index === 0;
+                const isTurn = room.currentTurn === player.id && room.status === 'PLAYING';
+                return (
+                    <div key={player.id} className={`absolute ${currentLayout[index]} flex flex-col items-center z-20`}>
+                        <div className="relative">
+                            <img
+                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}&backgroundColor=e4e4e7`}
+                                className={`
+                  ${isMe ? 'w-16 h-16' : 'w-12 h-12'} rounded-full border-[1.5px] bg-zinc-800 object-cover
+                  ${isTurn ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.6)]' : 'border-zinc-700'} 
+                  transition-all duration-300
+                `} alt={player.name}
+                            />
+                        </div>
+                        <div className={`mt-1.5 bg-zinc-900/90 backdrop-blur border ${isMe ? 'border-amber-600/50' : 'border-zinc-700/50'} px-2 py-0.5 rounded text-center shadow-lg`}>
+                            <p className={`text-[10px] font-bold truncate max-w-[70px] ${isMe ? 'text-amber-400' : 'text-zinc-300'}`}>{player.name}</p>
+                            {!isMe && <p className="text-[9px] text-amber-500/80 font-bold leading-none mt-0.5">{player.cardCount} lá</p>}
+                        </div>
                     </div>
+                );
+            })}
 
-                    {/* RENDER NGƯỜI CHƠI BÁM TRÊN VÀNH BÀN */}
-                    {rotatedPlayers.map((player, index) => {
-                        const isMe = index === 0;
-                        const isMyTurn = room.currentTurn === player.id;
-                        const pos = getPlayerPosition(index, rotatedPlayers.length);
+            {/* 3. KHU VỰC TRUNG TÂM */}
+            <div className="absolute top-[15%] bottom-[380px] left-4 right-4 flex flex-col items-center justify-center rounded-3xl z-10">
 
-                        return (
-                            <div
-                                key={player.id}
-                                className="absolute flex flex-col items-center z-20 transition-all duration-700 ease-in-out -translate-x-1/2 -translate-y-1/2"
-                                style={{ left: pos.left, top: pos.top }}
-                            >
-                                <div className="relative">
-                                    <img
-                                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}&backgroundColor=e4e4e7`}
-                                        className={`
-                      ${isMe ? 'w-16 h-16 sm:w-20 sm:h-20' : 'w-12 h-12 sm:w-14 sm:h-14'} 
-                      rounded-full border-2 bg-zinc-800 object-cover
-                      ${isMyTurn ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.6)] scale-110' : 'border-zinc-700'} 
-                      transition-all duration-300
-                    `}
-                                        alt={player.name}
-                                    />
-                                    {player.isBao && (
-                                        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] px-1.5 py-0.5 rounded font-black animate-pulse border border-red-400 z-40">BÁO</span>
-                                    )}
+                {/* Phase: Chờ Bắt Đầu */}
+                {room.status === 'WAITING' && room.hostId === user.id && (
+                    <button onClick={handleStartGame} className="px-8 py-4 bg-gradient-to-r from-amber-600 to-amber-500 text-zinc-950 font-black text-lg rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:brightness-110 transition-all z-50">
+                        BẮT ĐẦU CHIA BÀI
+                    </button>
+                )}
+                {room.status === 'WAITING' && room.hostId !== user.id && (
+                    <p className="text-zinc-500 text-sm font-bold tracking-widest">CHỜ CHỦ PHÒNG...</p>
+                )}
+
+                {/* Phase: Xin Sâm (Đếm ngược 45s) */}
+                {room.status === 'SAM_WAITING' && (
+                    <div className="flex flex-col items-center">
+                        {hasSkippedSam ? (
+                            // NẾU MÌNH ĐÃ BẤM BỎ QUA -> HIỆN CHỮ CHỜ
+                            <p className="text-zinc-500 text-sm font-bold tracking-widest animate-pulse">
+                                ĐANG CHỜ NGƯỜI KHÁC QUYẾT ĐỊNH...
+                            </p>
+                        ) : (
+                            // NẾU CHƯA BẤM -> HIỆN 2 NÚT VÀ ĐỒNG HỒ
+                            <>
+                                <p className="text-amber-500 text-lg font-black tracking-widest uppercase mb-4 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]">XIN SÂM KHÔNG?</p>
+                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-amber-600/20 flex items-center justify-center relative shadow-[inset_0_0_20px_rgba(245,158,11,0.1)]">
+                                    <span className="text-3xl sm:text-4xl text-amber-500 font-black absolute">{timeLeft}s</span>
+                                    <svg className="absolute w-full h-full -rotate-90">
+                                        <circle cx="50%" cy="50%" r="44%" stroke="transparent" strokeWidth="4" fill="none" />
+                                        <circle cx="50%" cy="50%" r="44%" stroke="#f59e0b" strokeWidth="4" fill="none"
+                                            strokeDasharray="276"
+                                            strokeDashoffset={`${276 * (1 - (timeLeft || 45) / 45)}`}
+                                            className="transition-all duration-1000 ease-linear"
+                                        />
+                                    </svg>
                                 </div>
 
-                                <div className={`mt-1.5 bg-zinc-900/90 backdrop-blur border ${isMe ? 'border-amber-600/50' : 'border-zinc-700/50'} px-2.5 py-0.5 rounded text-center shadow-lg`}>
-                                    <p className={`text-[10px] sm:text-xs font-bold truncate max-w-[70px] sm:max-w-[90px] ${isMe ? 'text-amber-400' : 'text-zinc-300'}`}>
-                                        {player.name}
-                                    </p>
-                                    {!isMe && (
-                                        <p className="text-[9px] sm:text-[10px] text-amber-500/80 font-bold leading-none mt-0.5">{player.cardCount} lá</p>
-                                    )}
+                                {/* 2 NÚT LỰA CHỌN */}
+                                <div className="flex gap-3 sm:gap-4 mt-6 sm:mt-8 z-50">
+                                    <button onClick={handleSkipSam} className="px-6 py-2.5 sm:py-3 bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-300 font-bold text-sm rounded-lg shadow-lg transition-colors">
+                                        BỎ QUA
+                                    </button>
+                                    <button onClick={handleRequestSam} className="px-8 py-2.5 sm:py-3 bg-zinc-900 border border-red-900/50 hover:bg-red-950/40 text-red-500 font-black text-base sm:text-lg rounded-lg shadow-lg transition-colors">
+                                        XIN SÂM
+                                    </button>
                                 </div>
-                            </div>
-                        );
-                    })}
-
-                    {/* NÚT CHIA BÀI TRUNG TÂM */}
-                    <div className="absolute z-10 flex items-center justify-center">
-                        {room.status === 'WAITING' && room.hostId === user.id && (
-                            <button
-                                onClick={handleStartGame}
-                                className="px-8 py-3.5 bg-gradient-to-r from-amber-600 to-amber-500 text-zinc-950 font-black text-sm sm:text-base rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.4)] hover:scale-105 active:scale-95 transition-all z-50"
-                            >
-                                CHIA BÀI
-                            </button>
-                        )}
-                        {room.status === 'WAITING' && room.hostId !== user.id && (
-                            <p className="text-zinc-500 text-xs sm:text-sm font-bold tracking-widest animate-pulse">CHỜ CHỦ PHÒNG...</p>
+                            </>
                         )}
                     </div>
+                )}
 
-                </div>
+                {/* Phase: Đang Chơi (Hiện bài vừa đánh ra) */}
+                {room.status === 'PLAYING' && room.lastMove && (
+                    <div className="relative flex flex-col items-center">
+                        <p className="text-zinc-500 text-xs font-bold tracking-widest mb-3 uppercase opacity-80">
+                            {room.players.find(p => p.id === room.lastMove.playerId)?.name || 'Ai đó'} ĐÁNH
+                        </p>
+                        <div className="flex justify-center -space-x-8 sm:-space-x-12">
+                            {room.lastMove.cards.map((card) => (
+                                <Card
+                                    key={`${card.rank}_${card.suit}_last`}
+                                    rank={card.rank} suit={card.suit}
+                                    className={`w-16 sm:w-24 shadow-[0_4px_20px_rgba(0,0,0,0.8)]`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
             </div>
 
-            {/* 4. KHU VỰC BÀI TRÊN TAY - CẬP NHẬT DÀN NGANG TUYỆT ĐỐI */}
+            {/* 4. KHU VỰC HÀNH ĐỘNG & BÀI TRÊN TAY */}
             <div className="absolute bottom-0 left-0 w-full pb-20 sm:pb-28 flex flex-col items-center justify-end pointer-events-none z-30 overflow-x-auto">
 
-                {/* Cụm Nút Hành Động (Giữ nguyên) */}
-                <div className="pointer-events-auto flex gap-3 mb-10 sm:mb-12">
-                    <button className="bg-zinc-800 border border-zinc-600 text-zinc-300 px-6 py-3 rounded-full font-bold text-sm tracking-wider shadow-lg active:scale-95 transition-all">
-                        BỎ LƯỢT
-                    </button>
-                    <button className="bg-gradient-to-r from-emerald-500 to-emerald-400 text-zinc-950 px-8 py-3 rounded-full font-black text-sm tracking-wider shadow-[0_0_15px_rgba(16,185,129,0.4)] active:scale-95 transition-all">
-                        ĐÁNH BÀI
-                    </button>
-                </div>
+                {/* Cụm Nút Hành Động */}
+                {room.status === 'PLAYING' && isMyTurn && (
+                    <div className="pointer-events-auto flex gap-3 mb-10 sm:mb-12">
+                        <div className="bg-zinc-900 border border-zinc-700/50 px-4 py-2.5 rounded flex items-center justify-center font-black text-sm text-zinc-400 mr-2 shadow-inner">
+                            {timeLeft}s
+                        </div>
+                        <button
+                            onClick={handlePassTurn}
+                            className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-zinc-300 px-6 py-2.5 rounded font-bold text-sm tracking-wider shadow-lg transition-colors">
+                            BỎ LƯỢT
+                        </button>
+                        <button
+                            onClick={handlePlayCards}
+                            className={`px-8 py-2.5 rounded font-black text-sm tracking-wider transition-colors ${selectedCards.length > 0
+                                ? 'bg-amber-600 hover:bg-amber-500 text-zinc-950 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                                : 'bg-zinc-800 text-zinc-600 cursor-not-allowed border border-zinc-700'
+                                }`}
+                            disabled={selectedCards.length === 0}
+                        >
+                            ĐÁNH BÀI
+                        </button>
+                    </div>
+                )}
 
-                {/* --- DẠY BÀI TRÊN TAY: ĐÃ DÀN NGANG KHÔNG XOAY --- */}
+                {/* Dãy bài trên tay */}
                 <div className="pointer-events-auto flex justify-center w-full px-4 max-w-xl">
                     {myCards && myCards.length > 0 ? (
                         <div className="flex justify-center -space-x-8 sm:-space-x-10">
-                            {myCards.map((card, i) => (
-                                <Card
-                                    key={`${card.rank}_${card.suit}`}
-                                    rank={card.rank}
-                                    suit={card.suit}
-                                    className={`
-                    w-16 sm:w-20 
-                    hover:-translate-y-10 hover:shadow-[0_0_25px_rgba(245,158,11,0.6)] hover:border-amber-500 cursor-pointer 
-                    transition-all duration-200
-                  `}
-                                />
-                            ))}
+                            {myCards.map((card) => {
+                                const isSelected = selectedCards.some(c => c.rank === card.rank && c.suit === card.suit);
+
+                                return (
+                                    <div
+                                        key={`${card.rank}_${card.suit}`}
+                                        onClick={() => toggleCardSelection(card)}
+                                        // Đã loại bỏ các hiệu ứng hover nhấp nhô, chỉ tịnh tiến mượt mà khi được chọn
+                                        className={`
+                      cursor-pointer transition-transform duration-200 ease-out
+                      ${isSelected ? '-translate-y-6 z-40' : 'z-10'}
+                    `}
+                                    >
+                                        <Card
+                                            rank={card.rank}
+                                            suit={card.suit}
+                                            className={`
+                        w-16 sm:w-20 transition-colors duration-200
+                        ${isSelected ? 'border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.4)]' : 'border-zinc-400 shadow-[0_4px_10px_rgba(0,0,0,0.5)]'}
+                      `}
+                                        />
+                                    </div>
+                                )
+                            })}
                         </div>
                     ) : (
                         <p className="text-zinc-600 text-xs font-bold tracking-widest mb-2">CHƯA CÓ BÀI</p>

@@ -75,6 +75,11 @@ io.on('connection', (socket) => {
         if (rooms[code]) rooms[code].handleSam(socket.playerId, io);
     });
 
+    // 5.1 Bỏ qua Xin Sâm
+    socket.on('SKIP_SAM', (code) => {
+        if (rooms[code]) rooms[code].handleSkipSam(socket.playerId, io);
+    });
+
     // 6. Đánh bài
     socket.on('PLAY_CARDS', ({ code, cards }) => {
         const room = rooms[code];

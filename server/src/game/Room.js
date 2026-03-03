@@ -13,6 +13,7 @@ export default class Room {
         this.samPlayer = null;
         this.passPlayers = new Set();
         this.timer = null;
+        this.passSamPlayers = new Set();
     }
 
     addPlayer(player) {
@@ -23,6 +24,7 @@ export default class Room {
 
     startDeal(io) {
         this.status = 'SAM_WAITING';
+        this.passSamPlayers.clear();
         const deck = this.generateDeck();
 
         this.players.forEach(p => {
@@ -33,14 +35,19 @@ export default class Room {
 
         io.to(this.code).emit('ROOM_UPDATE', this.getSafeRoomData());
 
-        let timeLeft = 45;
+        let timeLeft = 45; // Test nhanh thì bạn có thể sửa thành 5s hoặc 10s
+        io.to(this.code).emit('SAM_TIMER', timeLeft);
         this.timer = setInterval(() => {
             timeLeft--;
             io.to(this.code).emit('SAM_TIMER', timeLeft);
             if (timeLeft <= 0) {
                 clearInterval(this.timer);
-                this.status = 'PLAYING';
+                this.status = 'PLAYING'; // Hết giờ, bắt đầu đánh bình thường
                 io.to(this.code).emit('SAM_ENDED', { msg: 'Hết thời gian xin Sâm' });
+
+                // THÊM DÒNG NÀY: Đồng bộ trạng thái PLAYING về Client
+                io.to(this.code).emit('ROOM_UPDATE', this.getSafeRoomData());
+
                 this.startTurn(io);
             }
         }, 1000);
@@ -50,10 +57,30 @@ export default class Room {
         if (this.status !== 'SAM_WAITING') return;
         clearInterval(this.timer);
         this.samPlayer = playerId;
-        this.status = 'PLAYING';
+        this.status = 'PLAYING'; // Server chuyển sang trạng thái chơi
         this.currentTurn = this.players.findIndex(p => p.id === playerId);
+
         io.to(this.code).emit('SAM_CONFIRMED', { playerId });
+
+        // THÊM DÒNG NÀY: Đồng bộ trạng thái mới về cho tất cả Client
+        io.to(this.code).emit('ROOM_UPDATE', this.getSafeRoomData());
+
         this.startTurn(io);
+    }
+
+    handleSkipSam(playerId, io) {
+        if (this.status !== 'SAM_WAITING') return;
+
+        this.passSamPlayers.add(playerId);
+
+        // Nếu TẤT CẢ mọi người đều đã bấm bỏ qua -> Bắt đầu đánh luôn
+        if (this.passSamPlayers.size >= this.players.length) {
+            clearInterval(this.timer);
+            this.status = 'PLAYING';
+            io.to(this.code).emit('SAM_ENDED', { msg: 'Tất cả bỏ qua Xin Sâm, bắt đầu đánh!' });
+            io.to(this.code).emit('ROOM_UPDATE', this.getSafeRoomData());
+            this.startTurn(io);
+        }
     }
 
     startTurn(io) {

@@ -26,7 +26,7 @@ function App() {
       // Sắp xếp bài từ bé đến lớn (3 -> 2) cho dễ nhìn
       const sortedCards = cards.sort((a, b) => a.rank - b.rank);
       setMyCards(sortedCards);
-      toast.success('Đã chia bài xong!');
+      toast.success('Đã chia bài xong!', { id: 'deal' });
     });
 
     // HỨNG SỰ KIỆN ĐÁNH BÀI THÀNH CÔNG
@@ -79,7 +79,7 @@ function App() {
 
       {/* Nếu có room thì render Board, nếu không thì render Lobby */}
       {room ? (
-        <Board socket={socket} room={room} user={user} myCards={myCards} />
+        <Board socket={socket} room={room} user={user} myCards={myCards} timeLeft={timeLeft} />
       ) : (
         <Lobby socket={socket} user={user} />
       )}
