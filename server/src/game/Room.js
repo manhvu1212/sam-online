@@ -5,7 +5,12 @@ export default class Room {
     constructor(code, hostId, settings) {
         this.code = code;
         this.hostId = hostId;
-        this.settings = { bet: settings.bet || 1000, penalty: settings.penalty || 5 };
+        this.settings = {
+            bet: settings?.bet || 1000,         // Tiền cược mỗi lá (1k)
+            thoiHeo: settings?.thoiHeo || 5,    // Thối 1 Heo = 5 lá
+            chatHeo: settings?.chatHeo || 15,   // Bị chặt Heo = 15 lá
+            cong: settings?.cong || 15,         // Cóng = 15 lá
+        };
         this.players = [];
         this.status = 'WAITING'; // WAITING, SAM_WAITING, PLAYING, ENDED
         this.currentTurn = 0;
@@ -14,6 +19,7 @@ export default class Room {
         this.passPlayers = new Set();
         this.timer = null;
         this.passSamPlayers = new Set();
+        this.ledger = {};
     }
 
     addPlayer(player) {
@@ -156,15 +162,75 @@ export default class Room {
         // 3. Cập nhật bài trên tay cho Client (UPDATE_HAND)
         io.to(currentPlayer.socketId).emit('UPDATE_HAND', currentPlayer.cards);
 
-        // Kiểm tra Thắng và chuyển lượt (giữ nguyên phần code cũ của bạn ở dưới)
+        // 3. KIỂM TRA THẮNG CUỘC & TÍNH TIỀN (THEO LUẬT LÀNG)
         if (currentPlayer.cards.length === 0) {
             clearInterval(this.timer);
             this.status = 'ENDED';
-            io.to(this.code).emit('GAME_OVER', {
-                winnerId: playerId,
-                winnerName: currentPlayer.name,
-                msg: `${currentPlayer.name} ĐÃ HẾT BÀI VÀ GIÀNH CHIẾN THẮNG! 🎉`
+
+            const { bet, thoiHeo, cong } = this.settings;
+            const matchResults = [];
+            let totalWinnerMoney = 0;
+
+            // Tính tiền phạt cho từng người thua
+            this.players.forEach(p => {
+                if (p.id === playerId) return;
+
+                const penaltyCards = p.cards.length;
+                const isCong = penaltyCards === 10;
+                const heoCount = p.cards.filter(c => c.rank === 15).length;
+
+                let penaltyMoney = 0;
+                let detailMsg = [];
+
+                // Áp dụng số lá phạt từ Settings
+                if (isCong) {
+                    penaltyMoney += cong * bet;
+                    detailMsg.push(`Cóng (-${cong} lá)`);
+                } else {
+                    penaltyMoney += penaltyCards * bet;
+                    detailMsg.push(`-${penaltyCards} lá`);
+                }
+
+                if (heoCount > 0) {
+                    penaltyMoney += (heoCount * thoiHeo) * bet;
+                    detailMsg.push(`Thối ${heoCount} Heo (-${heoCount * thoiHeo} lá)`);
+                }
+
+                totalWinnerMoney += penaltyMoney;
+
+                // Trừ tiền vào Sổ nợ của phòng
+                this.ledger[p.id] -= penaltyMoney;
+
+                matchResults.push({
+                    id: p.id,
+                    name: p.name,
+                    cardCount: penaltyCards,
+                    moneyChange: -penaltyMoney,
+                    cards: p.cards,
+                    totalScore: this.ledger[p.id], // Lấy tổng nợ gửi về Client
+                    detail: detailMsg.join(', '),
+                    isWinner: false
+                });
             });
+
+            // Cộng tiền cho người thắng vào Sổ nợ
+            this.ledger[currentPlayer.id] += totalWinnerMoney;
+
+            matchResults.unshift({
+                id: currentPlayer.id,
+                name: currentPlayer.name,
+                cardCount: 0,
+                cards: [],
+                moneyChange: totalWinnerMoney,
+                totalScore: this.ledger[currentPlayer.id],
+                detail: 'Hết Bài',
+                isWinner: true
+            });
+
+            this.currentTurn = this.players.findIndex(p => p.id === playerId);
+
+            // Gửi kết quả ván đấu kèm Tổng kết sổ nợ
+            io.to(this.code).emit('GAME_OVER', { results: matchResults });
             io.to(this.code).emit('ROOM_UPDATE', this.getSafeRoomData());
             return;
         }

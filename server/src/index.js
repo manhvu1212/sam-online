@@ -101,6 +101,9 @@ io.on('connection', (socket) => {
         };
 
         room.players.push(newPlayer);
+        if (room.ledger[socket.playerId] === undefined) {
+            room.ledger[socket.playerId] = 0;
+        }
         socket.join(code);
         io.to(code).emit('ROOM_UPDATE', room.getSafeRoomData());
     });

@@ -5,16 +5,29 @@ import PlayerAvatar from './PlayerAvatar';
 import CenterStage from './CenterStage';
 import ActionBar from './ActionBar';
 import PlayerHand from './PlayerHand';
+import GameOverModal from './GameOverModal';
 
 export default function Board({ socket, room, user, myCards }) {
     // --- 1. STATES ---
     const [selectedCards, setSelectedCards] = useState([]);
     const [hasSkippedSam, setHasSkippedSam] = useState(false);
+    const [gameResults, setGameResults] = useState(null);
 
     // Reset xin sâm khi chuyển pha
     useEffect(() => {
         if (room.status !== 'SAM_WAITING') setHasSkippedSam(false);
     }, [room.status]);
+
+    useEffect(() => {
+        // Nếu ván đấu chưa kết thúc (hoặc vừa Reset ván mới), xóa bảng kết quả
+        if (room.status !== 'ENDED') setGameResults(null);
+
+        // Hứng dữ liệu từ Server
+        const handleGameOver = (data) => setGameResults(data.results);
+        socket.on('GAME_OVER', handleGameOver);
+
+        return () => socket.off('GAME_OVER', handleGameOver);
+    }, [socket, room.status]);
 
     // --- 2. LOGIC TÍNH TOÁN (ĐÃ ĐƯỢC CACHING) ---
     const rotatedPlayers = useMemo(() => {
@@ -100,7 +113,8 @@ export default function Board({ socket, room, user, myCards }) {
                 // Dò sảnh: Cộng dần rank lên để tìm các lá tiếp theo
                 let autoStraight = [];
                 for (let i = 0; i < requiredLength; i++) {
-                    const nextCard = myCards.find(c => c.rank === clickedRank + i);
+                    // sảng không có 2
+                    const nextCard = myCards.find(c => c.rank != 15 && c.rank === clickedRank + i);
                     if (nextCard) {
                         autoStraight.push(nextCard);
                     } else {
@@ -167,6 +181,13 @@ export default function Board({ socket, room, user, myCards }) {
                 </div>
             </div>
 
+            {/* MÀN HÌNH TỔNG KẾT (CHỈ HIỆN KHI CÓ KẾT QUẢ VÀ GAME ENDED) */}
+            <GameOverModal
+                room={room}
+                user={user}
+                results={gameResults}
+                onRestart={handleStartGame}
+            />
         </div>
     );
 }
