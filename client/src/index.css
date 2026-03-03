@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+/* Ghi đè font mặc định của Tailwind thành Montserrat */
+@theme {
+  --font-sans: "Montserrat", sans-serif;
+}
+
+body {
+  margin: 0;
+  background-color: #09090b; /* Màu kẽm đen tuyền (zinc-950) */
+  color: white;
+  font-family: var(--font-sans); /* Áp dụng font cho toàn bộ body */
+  overflow: hidden; /* Chống cuộn trang trên mobile */
+  -webkit-font-smoothing: antialiased; /* Làm font chữ sắc nét hơn trên màn hình xịn */
+  -moz-osx-font-smoothing: grayscale;
+}
