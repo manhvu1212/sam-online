@@ -1,4 +1,4 @@
-import SamLogic from './SamLogic.js';
+import GameLogic from './GameLogic.js';
 import Dealer from './Dealer.js';
 
 export default class Room {
@@ -83,24 +83,147 @@ export default class Room {
         }
     }
 
+    // 1. HÀM BẮT ĐẦU LƯỢT ĐÁNH (CÓ ĐẾM NGƯỢC)
+    // 1. HÀM BẮT ĐẦU LƯỢT ĐÁNH (CẬP NHẬT AUTO-PLAY)
     startTurn(io) {
-        io.to(this.code).emit('TURN_UPDATE', { playerId: this.players[this.currentTurn].id, timeout: 20 });
+        clearInterval(this.timer); // Xóa đồng hồ cũ nếu có
+
+        const currentPlayer = this.players[this.currentTurn];
+        let timeLeft = 20; // 20 giây cho mỗi lượt đánh
+
+        // Báo cho Client biết đến lượt ai và thời gian bao nhiêu
+        io.to(this.code).emit('TURN_UPDATE', {
+            playerId: currentPlayer.id,
+            timeout: timeLeft
+        });
+
+        // Bắt đầu đếm ngược thời gian đánh bài
+        this.timer = setInterval(() => {
+            timeLeft--;
+            io.to(this.code).emit('SAM_TIMER', timeLeft);
+
+            if (timeLeft <= 0) {
+                clearInterval(this.timer);
+
+                // --- LOGIC MỚI: KIỂM TRA QUYỀN MỞ VÒNG ---
+                if (!this.lastMove) {
+                    // TRƯỜNG HỢP 1: Bắt đầu vòng mới (trên bàn đang trống)
+                    // Không được phép bỏ lượt. Ép hệ thống tự đánh lá bài NHỎ NHẤT trên tay.
+                    const smallestCard = currentPlayer.cards.reduce((min, card) => card.rank < min.rank ? card : min, currentPlayer.cards[0]);
+
+                    // Giả lập hành động tự động ném lá bài nhỏ nhất ra bàn
+                    this.handlePlayCards(currentPlayer.id, [smallestCard], io);
+
+                } else {
+                    // TRƯỜNG HỢP 2: Đang nối vòng (Đã có người đánh trước đó)
+                    // Tự động ép Bỏ Lượt
+                    this.handlePass(currentPlayer.id, io);
+                }
+            }
+        }, 1000);
+    }
+
+    handlePlayCards(playerId, playedCards, io) {
+        if (this.status !== 'PLAYING') return;
+
+        const currentPlayer = this.players[this.currentTurn];
+        if (!currentPlayer || currentPlayer.id !== playerId) return;
+
+        // --- BẮT ĐẦU CHẶN ĐÁNH BÀI LÁO Ở ĐÂY ---
+        const lastCards = this.lastMove ? this.lastMove.cards : null;
+        const isValid = GameLogic.canPlay(lastCards, playedCards);
+
+        if (!isValid) {
+            // Nếu không hợp lệ, bắn thông báo lỗi thẳng mặt người đánh và TỪ CHỐI hàm này
+            io.to(currentPlayer.socketId).emit('ERROR', 'Bài đánh ra không hợp lệ hoặc không đủ lớn!');
+            return;
+        }
+        // --- KẾT THÚC CHẶN ---
+
+        // 1. Trừ bài trên tay của người chơi trên Server
+        currentPlayer.cards = currentPlayer.cards.filter(c =>
+            !playedCards.find(pc => pc.rank === c.rank && pc.suit === c.suit)
+        );
+
+        // 2. Cập nhật bài trên bàn (Đã thêm logic xịn vào lastMove)
+        const comboInfo = GameLogic.getCombo(playedCards);
+        this.lastMove = {
+            playerId: playerId,
+            cards: playedCards,
+            type: comboInfo ? comboInfo.type : 'BỘ BÀI'
+        };
+
+        // 3. Cập nhật bài trên tay cho Client (UPDATE_HAND)
+        io.to(currentPlayer.socketId).emit('UPDATE_HAND', currentPlayer.cards);
+
+        // Kiểm tra Thắng và chuyển lượt (giữ nguyên phần code cũ của bạn ở dưới)
+        if (currentPlayer.cards.length === 0) {
+            clearInterval(this.timer);
+            this.status = 'ENDED';
+            io.to(this.code).emit('GAME_OVER', {
+                winnerId: playerId,
+                winnerName: currentPlayer.name,
+                msg: `${currentPlayer.name} ĐÃ HẾT BÀI VÀ GIÀNH CHIẾN THẮNG! 🎉`
+            });
+            io.to(this.code).emit('ROOM_UPDATE', this.getSafeRoomData());
+            return;
+        }
+
+        this.nextTurn(io);
+    }
+
+    // 2. HÀM XỬ LÝ BỎ LƯỢT
+    handlePass(playerId, io) {
+        if (this.status !== 'PLAYING') return;
+
+        const currentPlayer = this.players[this.currentTurn];
+        if (!currentPlayer || currentPlayer.id !== playerId) return;
+
+        // THÊM DÒNG NÀY: Nếu trên bàn chưa có bài (Mở vòng) thì không cho bỏ lượt!
+        if (!this.lastMove) {
+            io.to(currentPlayer.socketId).emit('ERROR', 'Bạn là người mở vòng, bắt buộc phải đánh!');
+            return;
+        }
+
+        this.passPlayers.add(playerId);
+        this.nextTurn(io);
+        io.to(this.code).emit('ROOM_UPDATE', this.getSafeRoomData());
     }
 
     nextTurn(io) {
-        this.currentTurn = (this.currentTurn + 1) % this.players.length;
-        const nextPlayer = this.players[this.currentTurn];
+        // LOGIC MỚI: Nếu số người bỏ lượt = Tổng số người - 1 => Khép vòng!
+        if (this.passPlayers.size >= this.players.length - 1) {
+            this.passPlayers.clear(); // Xóa lịch sử bỏ lượt
 
-        if (this.passPlayers.has(nextPlayer.id) || nextPlayer.cards.length === 0) {
-            if (this.passPlayers.size >= this.players.filter(p => p.cards.length > 0).length - 1) {
-                this.lastMove = null;
-                this.passPlayers.clear();
-                io.to(this.code).emit('ROUND_RESET', { msg: 'Vòng mới!' });
-                // Lượt thuộc về người vừa đánh lá cuối cùng của vòng trước
-            } else {
-                return this.nextTurn(io);
+            // Tìm người vừa đánh lá bài cuối cùng (lastMove) để trao quyền mở vòng mới
+            let winnerIndex = -1;
+            if (this.lastMove) {
+                winnerIndex = this.players.findIndex(p => p.id === this.lastMove.playerId);
             }
+
+            this.lastMove = null; // Xóa sạch bài giữa bàn
+
+            // Trả lượt về cho người thắng vòng
+            if (winnerIndex !== -1) {
+                this.currentTurn = winnerIndex;
+            } else {
+                // Đề phòng người thắng vòng vừa thoát game, chuyển cho người kế tiếp
+                this.currentTurn = (this.currentTurn + 1) % this.players.length;
+            }
+
+            io.to(this.code).emit('ROOM_UPDATE', this.getSafeRoomData());
+            this.startTurn(io);
+            return; // Dừng hàm tại đây, không chạy xuống dưới nữa
         }
+
+        // NẾU CHƯA KHÉP VÒNG: Tìm người tiếp theo chưa bỏ lượt
+        let nextIndex = (this.currentTurn + 1) % this.players.length;
+        while (this.passPlayers.has(this.players[nextIndex].id)) {
+            nextIndex = (nextIndex + 1) % this.players.length;
+        }
+
+        this.currentTurn = nextIndex;
+        io.to(this.code).emit('ROOM_UPDATE', this.getSafeRoomData());
         this.startTurn(io);
     }
 
@@ -119,7 +242,15 @@ export default class Room {
             settings: this.settings,
             status: this.status,
             currentTurn: this.players[this.currentTurn]?.id,
-            players: this.players.map(p => ({ id: p.id, name: p.name, avatar_seed: p.avatar_seed, cardCount: p.cards.length, isBao: p.isBao }))
+            lastMove: this.lastMove, // Cần gửi thêm lastMove để client biết bài trên bàn
+            passPlayers: Array.from(this.passPlayers), // CHUYỂN SET THÀNH ARRAY Ở ĐÂY
+            players: this.players.map(p => ({
+                id: p.id,
+                name: p.name,
+                avatar_seed: p.avatar_seed,
+                cardCount: p.cards.length,
+                isBao: p.isBao
+            }))
         };
     }
 }

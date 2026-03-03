@@ -1,40 +1,34 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 
-// Đổi URL này thành IP của bạn nếu muốn test trên điện thoại (ví dụ: http://192.168.1.x:3001)
-const SERVER_URL = 'http://localhost:3001';
-
-export const useSocket = () => {
+export function useSocket() {
     const [socket, setSocket] = useState(null);
     const [user, setUser] = useState(null);
 
     useEffect(() => {
-        const newSocket = io(SERVER_URL);
+        // 1. Tìm thẻ CMND trong ví (LocalStorage)
+        let playerId = localStorage.getItem('playerId');
+
+        // 2. Nếu chưa có, cấp cho 1 thẻ CMND mới và cất vào ví
+        if (!playerId) {
+            playerId = Math.random().toString(36).substring(2, 12);
+            localStorage.setItem('playerId', playerId);
+        }
+
+        // 3. Đưa CMND cho bảo vệ (Server) lúc kết nối
+        const newSocket = io('http://localhost:3000', {
+            query: { playerId: playerId }
+        });
+
         setSocket(newSocket);
 
-        // 1. Khi kết nối thành công, yêu cầu Server xác thực
-        newSocket.on('connect', () => {
-            const savedPlayerId = localStorage.getItem('playerId');
-            const savedName = localStorage.getItem('playerName');
-
-            newSocket.emit('AUTH', {
-                playerId: savedPlayerId,
-                name: savedName || ""
-            });
-        });
-
-        // 2. Nhận thông tin user từ Server (ID cố định)
-        newSocket.on('AUTH_SUCCESS', (userData) => {
+        // Hứng thông tin hồ sơ từ Server (Database) gửi về
+        newSocket.on('USER_INFO', (userData) => {
             setUser(userData);
-            localStorage.setItem('playerId', userData.id);
-            localStorage.setItem('playerName', userData.name);
         });
 
-        // Bắt lỗi chung
-        newSocket.on('ERROR', (msg) => alert(`Lỗi: ${msg}`));
-
-        return () => newSocket.disconnect();
+        return () => newSocket.close();
     }, []);
 
-    return { socket, user, setUser };
-};
+    return { socket, user };
+}

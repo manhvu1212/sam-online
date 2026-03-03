@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import Card from './Card';
+import TimerDisplay from './TimerDisplay';
+import GameLogic from '../utils/GameLogic';
 
-export default function Board({ socket, room, user, myCards, timeLeft }) {
+export default function Board({ socket, room, user, myCards }) {
     const [selectedCards, setSelectedCards] = useState([]);
     const [hasSkippedSam, setHasSkippedSam] = useState(false);
 
@@ -56,14 +58,58 @@ export default function Board({ socket, room, user, myCards, timeLeft }) {
         setSelectedCards([]);
     };
 
-    const toggleCardSelection = (card) => {
-        const isSelected = selectedCards.some(c => c.rank === card.rank && c.suit === card.suit);
+    const toggleCardSelection = (clickedCard) => {
+        // 1. Nếu lá này đang được chọn -> Bấm lại để cụp nó xuống
+        const isSelected = selectedCards.some(c => c.rank === clickedCard.rank && c.suit === clickedCard.suit);
         if (isSelected) {
-            setSelectedCards(prev => prev.filter(c => !(c.rank === card.rank && c.suit === card.suit)));
-        } else {
-            setSelectedCards(prev => [...prev, card]);
+            setSelectedCards(prev => prev.filter(c => !(c.rank === clickedCard.rank && c.suit === clickedCard.suit)));
+            return;
         }
+
+        // --- 2. THUẬT TOÁN SMART SELECT (GỢI Ý CHỌN BÀI) ---
+        const lastCardsOnBoard = room.lastMove ? room.lastMove.cards : null;
+        const lastCombo = GameLogic.getCombo(lastCardsOnBoard);
+
+        if (lastCombo) {
+
+            // TRƯỜNG HỢP A: Đối thủ đánh 1 LÁ LẺ
+            if (lastCombo.type === 'SINGLE') {
+                // Đặc biệt: Nếu đối thủ đánh Heo (rank 15), quét xem mình có Tứ Quý không
+                if (lastCombo.highestRank === 15) {
+                    const myQuads = myCards.filter(c => c.rank === clickedCard.rank);
+                    if (myQuads.length === 4) {
+                        setSelectedCards(myQuads); // Nhấc luôn Tứ quý lên
+                        return;
+                    }
+                }
+                // Nếu không, tự động cụp lá cũ xuống, chỉ nhấc đúng 1 lá mới lên (Auto-Swap)
+                setSelectedCards([clickedCard]);
+                return;
+            }
+
+            // TRƯỜNG HỢP B: Đối thủ đánh ĐÔI, BA, hoặc TỨ QUÝ
+            if (['PAIR', 'TRIPLE', 'QUAD'].includes(lastCombo.type)) {
+                const requiredLength = lastCombo.length; // Số lá cần thiết (Ví dụ đôi là cần 2)
+                const sameRankCards = myCards.filter(c => c.rank === clickedCard.rank); // Tìm tất cả bài đồng cấp trên tay
+
+                // Nếu mình có đủ bài để đỡ -> Tự động nhấc ĐÚNG số lượng cần thiết
+                if (sameRankCards.length >= requiredLength) {
+                    setSelectedCards(sameRankCards.slice(0, requiredLength));
+                    return;
+                } else {
+                    // Nếu không đủ bộ để đè, xóa sạch các lá đang nhô, chỉ nhấc lá này lên cho gọn
+                    setSelectedCards([clickedCard]);
+                    return;
+                }
+            }
+        }
+
+        // TRƯỜNG HỢP C: Mình đang cầm cái MỞ VÒNG, hoặc đối thủ đánh SẢNH
+        // -> Bắt buộc cho phép nhấc bài tự do để tự do xếp Sảnh
+        setSelectedCards(prev => [...prev, clickedCard]);
     };
+
+    const isValidMove = GameLogic.canPlay(room.lastMove?.cards, selectedCards);
 
     return (
         <div className="relative w-full h-screen bg-[#0a0a0c] text-zinc-200 overflow-hidden flex flex-col">
@@ -88,6 +134,10 @@ export default function Board({ socket, room, user, myCards, timeLeft }) {
             {rotatedPlayers.map((player, index) => {
                 const isMe = index === 0;
                 const isTurn = room.currentTurn === player.id && room.status === 'PLAYING';
+
+                // KIỂM TRA XEM NGƯỜI NÀY ĐÃ BỎ LƯỢT CHƯA
+                const isPassed = room.passPlayers?.includes(player.id);
+
                 return (
                     <div key={player.id} className={`absolute ${currentLayout[index]} flex flex-col items-center z-20`}>
                         <div className="relative">
@@ -96,11 +146,21 @@ export default function Board({ socket, room, user, myCards, timeLeft }) {
                                 className={`
                   ${isMe ? 'w-16 h-16' : 'w-12 h-12'} rounded-full border-[1.5px] bg-zinc-800 object-cover
                   ${isTurn ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.6)]' : 'border-zinc-700'} 
+                  ${isPassed ? 'opacity-40 grayscale' : 'opacity-100'} /* LÀM MỜ NẾU BỎ LƯỢT */
                   transition-all duration-300
                 `} alt={player.name}
                             />
+                            {player.isBao && (
+                                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[8px] px-1 py-0.5 rounded font-black animate-pulse border border-red-400 z-40">BÁO</span>
+                            )}
+                            {/* HIỂN THỊ CHỮ BỎ LƯỢT ĐÈ LÊN AVATAR */}
+                            {isPassed && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                                    <span className="text-[8px] sm:text-[10px] font-black text-zinc-300 rotate-12 drop-shadow-md">BỎ LƯỢT</span>
+                                </div>
+                            )}
                         </div>
-                        <div className={`mt-1.5 bg-zinc-900/90 backdrop-blur border ${isMe ? 'border-amber-600/50' : 'border-zinc-700/50'} px-2 py-0.5 rounded text-center shadow-lg`}>
+                        <div className={`mt-1.5 bg-zinc-900/90 backdrop-blur border ${isMe ? 'border-amber-600/50' : 'border-zinc-700/50'} px-2 py-0.5 rounded text-center shadow-lg ${isPassed ? 'opacity-50' : ''}`}>
                             <p className={`text-[10px] font-bold truncate max-w-[70px] ${isMe ? 'text-amber-400' : 'text-zinc-300'}`}>{player.name}</p>
                             {!isMe && <p className="text-[9px] text-amber-500/80 font-bold leading-none mt-0.5">{player.cardCount} lá</p>}
                         </div>
@@ -133,17 +193,8 @@ export default function Board({ socket, room, user, myCards, timeLeft }) {
                             // NẾU CHƯA BẤM -> HIỆN 2 NÚT VÀ ĐỒNG HỒ
                             <>
                                 <p className="text-amber-500 text-lg font-black tracking-widest uppercase mb-4 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]">XIN SÂM KHÔNG?</p>
-                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-amber-600/20 flex items-center justify-center relative shadow-[inset_0_0_20px_rgba(245,158,11,0.1)]">
-                                    <span className="text-3xl sm:text-4xl text-amber-500 font-black absolute">{timeLeft}s</span>
-                                    <svg className="absolute w-full h-full -rotate-90">
-                                        <circle cx="50%" cy="50%" r="44%" stroke="transparent" strokeWidth="4" fill="none" />
-                                        <circle cx="50%" cy="50%" r="44%" stroke="#f59e0b" strokeWidth="4" fill="none"
-                                            strokeDasharray="276"
-                                            strokeDashoffset={`${276 * (1 - (timeLeft || 45) / 45)}`}
-                                            className="transition-all duration-1000 ease-linear"
-                                        />
-                                    </svg>
-                                </div>
+
+                                <TimerDisplay socket={socket} type="circle" />
 
                                 {/* 2 NÚT LỰA CHỌN */}
                                 <div className="flex gap-3 sm:gap-4 mt-6 sm:mt-8 z-50">
@@ -185,21 +236,24 @@ export default function Board({ socket, room, user, myCards, timeLeft }) {
                 {/* Cụm Nút Hành Động */}
                 {room.status === 'PLAYING' && isMyTurn && (
                     <div className="pointer-events-auto flex gap-3 mb-10 sm:mb-12">
-                        <div className="bg-zinc-900 border border-zinc-700/50 px-4 py-2.5 rounded flex items-center justify-center font-black text-sm text-zinc-400 mr-2 shadow-inner">
-                            {timeLeft}s
-                        </div>
-                        <button
-                            onClick={handlePassTurn}
-                            className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-zinc-300 px-6 py-2.5 rounded font-bold text-sm tracking-wider shadow-lg transition-colors">
-                            BỎ LƯỢT
-                        </button>
+                        <TimerDisplay socket={socket} type="badge" />
+
+                        {/* CHỈ HIỆN NÚT BỎ LƯỢT KHI ĐÃ CÓ NGƯỜI ĐÁNH TRƯỚC ĐÓ (NỐI VÒNG) */}
+                        {room.lastMove && (
+                            <button
+                                onClick={handlePassTurn}
+                                className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-zinc-300 px-6 py-2.5 rounded font-bold text-sm tracking-wider shadow-lg transition-colors">
+                                BỎ LƯỢT
+                            </button>
+                        )}
+
                         <button
                             onClick={handlePlayCards}
-                            className={`px-8 py-2.5 rounded font-black text-sm tracking-wider transition-colors ${selectedCards.length > 0
+                            className={`px-8 py-2.5 rounded font-black text-sm tracking-wider transition-colors ${isValidMove
                                 ? 'bg-amber-600 hover:bg-amber-500 text-zinc-950 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
                                 : 'bg-zinc-800 text-zinc-600 cursor-not-allowed border border-zinc-700'
                                 }`}
-                            disabled={selectedCards.length === 0}
+                            disabled={!isValidMove}
                         >
                             ĐÁNH BÀI
                         </button>

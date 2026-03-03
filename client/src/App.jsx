@@ -9,7 +9,6 @@ function App() {
   const [room, setRoom] = useState(null);
 
   const [myCards, setMyCards] = useState([]);
-  const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
     if (!socket) return;
@@ -29,31 +28,10 @@ function App() {
       toast.success('Đã chia bài xong!', { id: 'deal' });
     });
 
-    // HỨNG SỰ KIỆN ĐÁNH BÀI THÀNH CÔNG
-    socket.on('MOVE_ACCEPTED', (data) => {
-      // Nếu là mình đánh, thì xóa các lá bài vừa đánh khỏi myCards
-      if (user && data.playerId === user.id) {
-        setMyCards(prev => prev.filter(c =>
-          !data.cards.find(sc => sc.rank === c.rank && sc.suit === c.suit)
-        ));
-      }
-    });
-
-    // HỨNG SỰ KIỆN THỜI GIAN VÀ CHUYỂN LƯỢT
-    socket.on('SAM_TIMER', (time) => setTimeLeft(time));
-    socket.on('SAM_ENDED', (data) => {
-      setTimeLeft(0);
-      toast(data.msg, { icon: '⏳' });
-    });
-    socket.on('SAM_CONFIRMED', (data) => {
-      setTimeLeft(0);
-      toast.success('Có người đã Báo Sâm!', { icon: '🔥' });
-    });
-    socket.on('TURN_UPDATE', (data) => {
-      setTimeLeft(data.timeout);
-      if (user && data.playerId === user.id) {
-        toast('Đến lượt bạn!', { icon: '👉', duration: 2000, position: 'bottom-center' });
-      }
+    socket.on('UPDATE_HAND', (newCards) => {
+      // Nhận mảng bài mới từ Server, sắp xếp lại và hiển thị luôn. Chắc chắn mất lá bài đã đánh!
+      const sortedCards = newCards.sort((a, b) => a.rank - b.rank);
+      setMyCards(sortedCards);
     });
 
     socket.on('ERROR', (msg) => {
@@ -62,9 +40,7 @@ function App() {
 
     return () => {
       socket.off('ROOM_CREATED'); socket.off('ROOM_UPDATE');
-      socket.off('GAME_DEAL_CARDS'); socket.off('MOVE_ACCEPTED');
-      socket.off('SAM_TIMER'); socket.off('SAM_ENDED');
-      socket.off('SAM_CONFIRMED'); socket.off('TURN_UPDATE');
+      socket.off('GAME_DEAL_CARDS'); socket.off('UPDATE_HAND');
       socket.off('ERROR');
     };
   }, [socket]);
@@ -79,7 +55,7 @@ function App() {
 
       {/* Nếu có room thì render Board, nếu không thì render Lobby */}
       {room ? (
-        <Board socket={socket} room={room} user={user} myCards={myCards} timeLeft={timeLeft} />
+        <Board socket={socket} room={room} user={user} myCards={myCards} />
       ) : (
         <Lobby socket={socket} user={user} />
       )}
