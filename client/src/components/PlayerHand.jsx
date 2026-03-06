@@ -11,7 +11,9 @@ export default function PlayerHand({ myCards, lastMove, roomStatus, selectedCard
 
     const setSelectedCardsWithToggle = (cards) => {
         setSelectedCards(cards)
-        setIsToggle(false)
+        setTimeout(() => {
+            setIsToggle(false)
+        }, 250)
     }
 
     // --- THUẬT TOÁN CHỌN BÀI THÔNG MINH ---
