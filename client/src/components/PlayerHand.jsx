@@ -85,7 +85,7 @@ export default function PlayerHand({ myCards, lastMove, roomStatus, selectedCard
                     <div
                         key={`${c.rank}-${c.suit}`}
                         onClick={() => toggleCardSelection(c)}
-                        className={`relative  ${isLast ? `shrink-0` : `shrink min-w-0`}`}
+                        className={`relative touch-manipulation select-none  ${isLast ? `shrink-0` : `shrink min-w-0`}`}
                         style={{ zIndex: i, width: `${isLast ? `${scale * 80}px` : `${scale * 60}px`}` }}
                     >
                         <Card
