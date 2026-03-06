@@ -29,8 +29,8 @@ export default function useWakeLock() {
         const handleFirstInteraction = () => {
             requestWakeLock();
             // Chạy thành công thì gỡ cái bẫy này ra cho nhẹ máy
-            document.removeEventListener('pointerdown', handleFirstInteraction);
-            document.removeEventListener('touchstart', enableWakeLock);
+            // document.removeEventListener('pointerdown', handleFirstInteraction);
+            // document.removeEventListener('touchstart', enableWakeLock);
         };
         document.addEventListener('pointerdown', handleFirstInteraction);
         document.addEventListener('touchstart', handleFirstInteraction);
