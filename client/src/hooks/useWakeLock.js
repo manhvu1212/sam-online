@@ -20,7 +20,7 @@ export default function useWakeLock() {
                     alert('Trình duyệt của bạn không hỗ trợ Wake Lock API.');
                 }
             } catch (err) {
-                alert('Không thể khóa sáng màn hình:', err.name, err.message);
+                alert('Không thể khóa sáng màn hình:' + err.name + err.message);
             }
         };
 
