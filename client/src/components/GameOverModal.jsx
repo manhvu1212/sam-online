@@ -1,8 +1,11 @@
 import React, { memo } from 'react';
 import Card from './Card';
 
-const GameOverModal = memo(function GameOverModal({ room, user, results, onRestart }) {
-    if (room.status !== 'ENDED' || !results) return null;
+const GameOverModal = memo(function GameOverModal({ user, results, onReadyNext }) {
+    if (!results) return null;
+
+    const isMobile = window.innerWidth < 768;
+    const scale = isMobile ? 0.7 : 0.9
 
     return (
         <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4">
@@ -27,8 +30,8 @@ const GameOverModal = memo(function GameOverModal({ room, user, results, onResta
                             <div
                                 key={r.id}
                                 className={`flex flex-col p-3 rounded-xl border ${r.isWinner
-                                        ? 'bg-amber-500/10 border-amber-500/50 shadow-inner'
-                                        : 'bg-zinc-800/30 border-zinc-800'
+                                    ? 'bg-amber-500/10 border-amber-500/50 shadow-inner'
+                                    : 'bg-zinc-800/30 border-zinc-800'
                                     } ${isMe ? 'ring-1 ring-zinc-400' : ''}`}
                             >
                                 {/* DÒNG 1: THÔNG TIN VÀ TIỀN BẠC */}
@@ -62,15 +65,29 @@ const GameOverModal = memo(function GameOverModal({ room, user, results, onResta
 
                                 {/* DÒNG 2: LẬT BÀI MINH BẠCH (Chỉ hiện cho người thua) */}
                                 {!r.isWinner && r.cards && r.cards.length > 0 && (
-                                    <div className="mt-3 pt-3 border-t border-zinc-700/50 flex flex-col gap-1.5">
+                                    <div id={`result-cards-container-${r.id}`} className="mt-3 pt-3 border-t border-zinc-700/50 flex flex-col gap-1.5">
                                         <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Bài còn lại ({r.cardCount} lá):</span>
-                                        <div className="flex -space-x-3 sm:-space-x-4 pl-1">
-                                            {/* Sắp xếp bài từ bé đến lớn cho dễ nhìn trước khi in ra */}
-                                            {[...r.cards].sort((a, b) => a.rank - b.rank).map((c, i) => (
-                                                <div key={`${c.rank}_${c.suit}`} className="hover:-translate-y-2 transition-transform cursor-pointer z-10">
-                                                    <Card rank={c.rank} suit={c.suit} className="w-9 sm:w-11 shadow-[0_2px_8px_rgba(0,0,0,0.5)] border-zinc-500" />
-                                                </div>
-                                            ))}
+
+                                        {/* Thẻ cha bọc toàn bộ các lá bài */}
+                                        <div className="flex w-full max-w-full">
+                                            {[...r.cards].sort((a, b) => a.rank - b.rank).map((c, i) => {
+                                                // Kiểm tra xem đây có phải lá cuối cùng không
+                                                const isLast = i === r.cards.length - 1;
+
+                                                return (
+                                                    <div
+                                                        key={`${c.rank}-${c.suit}`}
+                                                        className={`relative  ${isLast ? `shrink-0` : `shrink min-w-0`}`}
+                                                        style={{ zIndex: i, width: `${isLast ? `${Math.round(scale * 80)}px` : `${Math.round(scale * 40)}px`}` }}
+                                                    >
+                                                        <Card
+                                                            rank={c.rank}
+                                                            suit={c.suit}
+                                                            scale={scale}
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}
@@ -80,18 +97,14 @@ const GameOverModal = memo(function GameOverModal({ room, user, results, onResta
                     })}
                 </div>
 
-                {/* Nút bắt đầu */}
+                {/* Nút chơi tiếp chung cho cả làng */}
                 <div className="p-4 bg-zinc-950 border-t border-zinc-800 flex justify-center">
-                    {room.hostId === user.id ? (
-                        <button
-                            onClick={onRestart}
-                            className="w-full sm:w-auto px-10 py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:brightness-110 text-zinc-950 font-black text-sm tracking-widest rounded-lg shadow-lg transition-all"
-                        >
-                            TIẾP TỤC VÁN MỚI
-                        </button>
-                    ) : (
-                        <p className="text-zinc-500 text-sm font-bold tracking-widest animate-pulse">CHỜ CHỦ PHÒNG CHIA BÀI...</p>
-                    )}
+                    <button
+                        onClick={onReadyNext}
+                        className="w-full sm:w-auto px-12 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:brightness-110 text-zinc-950 font-black text-sm tracking-widest rounded-lg shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all"
+                    >
+                        CHƠI TIẾP
+                    </button>
                 </div>
 
             </div>

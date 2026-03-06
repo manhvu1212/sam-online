@@ -3,35 +3,53 @@ import TimerDisplay from './TimerDisplay';
 
 const ActionBar = memo(function ActionBar({
     socket,
-    room,
+    roomStatus,
+    skipSam,
+    onSkipSam,
+    onRequestSam,
     isMyTurn,
+    lastMove,
     isValidMove,
     onPassTurn,
     onPlayCards
 }) {
     // Chỉ hiện thanh này khi đang trong ván và đến đúng lượt của mình
-    if (room.status !== 'PLAYING' || !isMyTurn) return null;
-
     return (
         <div className="pointer-events-auto flex gap-3 mb-10 sm:mb-12">
-            <TimerDisplay socket={socket} type="badge" />
-
-            {room.lastMove && (
-                <button onClick={onPassTurn} className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-zinc-300 px-6 py-2.5 rounded font-bold text-sm tracking-wider shadow-lg transition-colors">
-                    BỎ LƯỢT
-                </button>
+            {roomStatus === 'SAM_WAITING' && (
+                <div className={skipSam ? 'opacity-0' : ''}>
+                    <button onClick={onSkipSam} disabled={!skipSam} className="px-6 py-2.5 bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-300 font-bold text-sm rounded-lg shadow-lg transition-colors">BỎ QUA</button>
+                    <button onClick={onRequestSam} disabled={!skipSam} className="px-8 py-2.5 bg-zinc-900 border border-red-900/50 hover:bg-red-950/40 text-red-500 font-black text-base rounded-lg shadow-lg transition-colors">XIN SÂM</button>
+                </div>
             )}
 
-            <button
-                onClick={onPlayCards}
-                disabled={!isValidMove}
-                className={`px-8 py-2.5 rounded font-black text-sm tracking-wider transition-all duration-300 ${isValidMove
-                        ? 'bg-amber-600 hover:bg-amber-500 text-zinc-950 shadow-[0_0_20px_rgba(245,158,11,0.5)] scale-105 cursor-pointer'
-                        : 'bg-zinc-800 text-zinc-600 cursor-not-allowed border border-zinc-700'
-                    }`}
-            >
-                ĐÁNH BÀI
-            </button>
+            {roomStatus === 'PLAYING' && (
+                <>
+                    <TimerDisplay socket={socket} type="badge" />
+
+                    {isMyTurn && (
+                        <>
+                            {lastMove && (
+                                <button onClick={onPassTurn} className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-zinc-300 px-6 py-2.5 rounded font-bold text-sm tracking-wider shadow-lg transition-colors">
+                                    BỎ LƯỢT
+                                </button>
+                            )}
+
+                            <button
+                                onClick={onPlayCards}
+                                disabled={!isValidMove}
+                                className={`px-8 py-2.5 rounded font-black text-sm tracking-wider transition-all duration-300 ${isValidMove
+                                    ? 'bg-amber-600 hover:bg-amber-500 text-zinc-950 shadow-[0_0_20px_rgba(245,158,11,0.5)] scale-105 cursor-pointer'
+                                    : 'bg-zinc-800 text-zinc-600 cursor-not-allowed border border-zinc-700'
+                                    }`}
+                            >
+                                ĐÁNH BÀI
+                            </button>
+                        </>
+                    )}
+
+                </>
+            )}
         </div>
     );
 });

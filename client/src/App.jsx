@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { Toaster, toast } from 'react-hot-toast';
 import { useSocket } from './hooks/useSocket';
 import Lobby from './components/Lobby';
-import Board from './components/Board'; // Nhập Board vào
-import { Toaster, toast } from 'react-hot-toast';
+import Board from './components/Board';
 
 function App() {
   const { socket, user } = useSocket();
@@ -14,7 +14,7 @@ function App() {
     if (!socket) return;
 
     socket.on('ROOM_CREATED', (code) => {
-      socket.emit('JOIN_ROOM', code);
+      toast.success('Phòng chơi đã sẵn sàng!', { id: "CREATE_ROOM", duration: 1000 });
     });
 
     socket.on('ROOM_UPDATE', (roomData) => {
@@ -25,7 +25,6 @@ function App() {
       // Sắp xếp bài từ bé đến lớn (3 -> 2) cho dễ nhìn
       const sortedCards = cards.sort((a, b) => a.rank - b.rank);
       setMyCards(sortedCards);
-      toast.success('Đã chia bài xong!', { id: 'deal' });
     });
 
     socket.on('UPDATE_HAND', (newCards) => {
@@ -34,14 +33,20 @@ function App() {
       setMyCards(sortedCards);
     });
 
-    socket.on('ERROR', (msg) => {
-      toast.error(msg, { duration: 3000 });
+    socket.on('NOTIFICATION', (data) => {
+      if (data.type === 'success') {
+        toast.success(data.message, { ...data.config, duration: 2000 });
+      } else if (data.type == 'loading') {
+        toast.loading(data.message, { ...data.config, duration: 2000 });
+      } else {
+        toast.error(data.message, { ...data.config, duration: 2000 });
+      }
     });
 
     return () => {
       socket.off('ROOM_CREATED'); socket.off('ROOM_UPDATE');
       socket.off('GAME_DEAL_CARDS'); socket.off('UPDATE_HAND');
-      socket.off('ERROR');
+      socket.off('NOTIFICATION');
     };
   }, [socket]);
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 export default function TimerDisplay({ socket, type = 'badge' }) {
-    const [timeLeft, setTimeLeft] = useState(0);
+    const [timeLeft, setTimeLeft] = useState(type == 'circle' ? 45 : 30);
 
     useEffect(() => {
         if (!socket) return;

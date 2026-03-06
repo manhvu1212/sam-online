@@ -23,8 +23,8 @@ export default function Lobby({ socket, user }) {
     };
 
     const handleCreateRoom = () => {
-        socket.emit('CREATE_ROOM', { bet: 1000, penalty: 5 });
-        toast.loading('Đang khởi tạo bàn VIP...', { duration: 1000 });
+        socket.emit('CREATE_ROOM', { bet: 1000 });
+        toast.loading('Đang khởi tạo phòng VIP...', { id: 'CREATE_ROOM', duration: 1000 });
     };
 
     const handleJoinRoom = () => {
@@ -48,7 +48,7 @@ export default function Lobby({ socket, user }) {
                     {/* Vòng sáng quanh Avatar */}
                     <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl animate-pulse"></div>
                     <img
-                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name || user?.avatar_seed || 'default'}&backgroundColor=e4e4e7`}
+                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name || 'default'}&backgroundColor=e4e4e7`}
                         alt="avatar"
                         className="w-28 h-28 rounded-full border border-amber-500/50 ring-4 ring-zinc-950 relative z-10 shadow-2xl transition-all"
                     />

@@ -44,6 +44,7 @@ class GameLogic {
      * So sánh bài mới đánh ra có đè được bài cũ trên bàn không
      */
     static canPlay(lastCards, newCards) {
+        return true
         console.log("newCards", newCards)
         const newCombo = this.getCombo(newCards);
         console.log("newCombo", newCombo)

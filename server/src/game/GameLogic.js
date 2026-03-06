@@ -44,6 +44,7 @@ class GameLogic {
      * So sánh bài mới đánh ra có đè được bài cũ trên bàn không
      */
     static canPlay(lastCards, newCards) {
+        return true
         const newCombo = this.getCombo(newCards);
 
         // Nếu bộ bài bấm chọn là tào lao (vd: 3 Bích + 5 Cơ) -> Chặn luôn!
@@ -70,6 +71,43 @@ class GameLogic {
 
         // Trái luật -> Bắt lỗi
         return false;
+    }
+
+    // THÊM HÀM MỚI: KIỂM TRA TỚI TRẮNG
+    static checkToiTrang(cards) {
+        if (!cards || cards.length !== 10) return null;
+
+        const sorted = [...cards].sort((a, b) => a.rank - b.rank);
+
+        // 1. SẢNH RỒNG (Ưu tiên Cao nhất: 4)
+        let isSanhRong = true;
+        for (let i = 0; i < 9; i++) {
+            if (sorted[i + 1].rank - sorted[i].rank !== 1) {
+                isSanhRong = false;
+                break;
+            }
+        }
+        if (isSanhRong) return { type: "Sảnh Rồng", priority: 4 };
+
+        // 2. TỨ QUÝ HEO (Ưu tiên: 3)
+        const countHeo = sorted.filter(c => c.rank === 15).length;
+        if (countHeo === 4) return { type: "Tứ Quý Heo", priority: 3 };
+
+        // 3. 10 LÁ ĐỒNG MÀU (Ưu tiên: 2)
+        const isAllRed = sorted.every(c => c.suit === 'heart' || c.suit === 'diamond');
+        const isAllBlack = sorted.every(c => c.suit === 'spade' || c.suit === 'club');
+        if (isAllRed || isAllBlack) return { type: "Đồng Màu", priority: 2 };
+
+        // 4. 5 ĐÔI (Ưu tiên: 1)
+        let pairCount = 0;
+        for (let i = 0; i < 9; i += 2) { // 5 đôi thì bắt buộc các cặp nằm sát nhau: 0-1, 2-3...
+            if (sorted[i].rank === sorted[i + 1].rank) {
+                pairCount++;
+            }
+        }
+        if (pairCount === 5) return { type: "5 Đôi", priority: 1 };
+
+        return null; // Không có gì đặc biệt
     }
 }
 
