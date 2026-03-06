@@ -23,7 +23,7 @@ export default function Card({ rank, suit, style, className = '', scale = 1 }) {
             className={`
                         relative 
                         bg-white rounded-lg border border-slate-300 
-                        flex flex-col select-none transition-all duration-100
+                        flex flex-col select-none transition-all duration-200
                         shadow-[0_2px_8px_rgba(0,0,0,0.5)] border-zinc-500
                         p-1
                         aspect-[2/3]
