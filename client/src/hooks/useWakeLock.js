@@ -9,16 +9,16 @@ export default function useWakeLock() {
             try {
                 if ('wakeLock' in navigator && wakeLockRef.current === null) {
                     wakeLockRef.current = await navigator.wakeLock.request('screen');
-                    console.log('✅ Khóa sáng màn hình thành công!');
+                    alert('✅ Khóa sáng màn hình thành công!');
 
                     wakeLockRef.current.addEventListener('release', () => {
-                        console.log('⚠️ Màn hình đã được thả rông.');
+                        alert('⚠️ Màn hình đã được thả rông.');
                         wakeLockRef.current = null;
                     });
                 }
             } catch (err) {
                 // Nếu lỗi là do chưa tương tác, hệ thống sẽ im lặng chờ cú click tiếp theo
-                console.warn('Wake Lock bị từ chối:', err.message);
+                alert('Wake Lock bị từ chối:' + err.message);
             }
         };
 
