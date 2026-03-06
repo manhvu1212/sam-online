@@ -13,7 +13,7 @@ export default function PlayerHand({ myCards, lastMove, roomStatus, selectedCard
         setSelectedCards(cards)
         setTimeout(() => {
             setIsToggle(false)
-        }, 550)
+        }, 350)
     }
 
     // --- THUẬT TOÁN CHỌN BÀI THÔNG MINH ---
