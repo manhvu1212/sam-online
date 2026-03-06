@@ -44,10 +44,7 @@ class GameLogic {
      * So sánh bài mới đánh ra có đè được bài cũ trên bàn không
      */
     static canPlay(lastCards, newCards) {
-        return true
-        console.log("newCards", newCards)
         const newCombo = this.getCombo(newCards);
-        console.log("newCombo", newCombo)
 
         // Nếu bộ bài bấm chọn là tào lao (vd: 3 Bích + 5 Cơ) -> Chặn luôn!
         if (!newCombo) return false;
@@ -55,9 +52,7 @@ class GameLogic {
         // Nếu bàn đang trống (Mở vòng mới) -> Đánh bộ nào hợp lệ cũng được phép
         if (!lastCards || lastCards.length === 0) return true;
 
-        console.log("lastCards", lastCards)
         const lastCombo = this.getCombo(lastCards);
-        console.log("lastCombo", lastCombo)
         if (!lastCombo) return true; // (Đề phòng lỗi data cũ)
 
         // --- LUẬT ĐẶC BIỆT: TỨ QUÝ CHẶT HEO ---

@@ -44,7 +44,6 @@ class GameLogic {
      * So sánh bài mới đánh ra có đè được bài cũ trên bàn không
      */
     static canPlay(lastCards, newCards) {
-        return true
         const newCombo = this.getCombo(newCards);
 
         // Nếu bộ bài bấm chọn là tào lao (vd: 3 Bích + 5 Cơ) -> Chặn luôn!
