@@ -17,9 +17,26 @@ export default function Card({ rank, suit, style, className = '', scale = 1 }) {
     const label = RANK_LABELS[rank];
     const suitInfo = SUIT_ICONS[suit] || SUIT_ICONS['spade']; // mặc định Bích nếu sai dữ liệu
 
+    const [isGhost, setIsGhost] = useState(false);
+    const handleTap = (e) => {
+        e.stopPropagation();
+
+        // Nếu đang là bóng ma (đang trượt) thì cấm không cho bấm double-tap
+        if (isGhost) return;
+
+        // 2. Kích hoạt xuyên thấu
+        setIsGhost(true);
+
+        // 3. Hẹn giờ 250ms sau (đợi CSS trượt xong) thì gỡ xuyên thấu ra
+        // Để người chơi còn có thể bấm vào lá bài đó để hạ nó xuống
+        setTimeout(() => {
+            setIsGhost(false);
+        }, 300);
+    };
 
     return (
         <div
+            onPointerDown={handleTap}
             style={{ ...style, width: `${Math.round(scale * 80)}px` }}
             className={`
                         relative 
@@ -29,6 +46,8 @@ export default function Card({ rank, suit, style, className = '', scale = 1 }) {
                         p-1
                         aspect-[2/3]
                         ${className}
+
+                        ${isGhost ? 'pointer-events-none' : 'pointer-events-auto'}
                     `}
         >
             {/* 1. GÓC TRÊN BÊN TRÁI: Chữ đứng thẳng, to rõ */}
@@ -43,8 +62,8 @@ export default function Card({ rank, suit, style, className = '', scale = 1 }) {
             </div>
 
             {/* 2. PIP (KÝ HIỆU GIỮA): Luôn hiển thị, điều chỉnh cỡ cho mobile */}
-            <div style={{ fontSize: `${Math.round(scale * 50)}px` }} 
-                    className={`
+            <div style={{ fontSize: `${Math.round(scale * 50)}px` }}
+                className={`
                                 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
                                 ${suitInfo.color} opacity-[0.15]
                             `}>
