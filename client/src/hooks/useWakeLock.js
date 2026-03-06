@@ -10,6 +10,9 @@ export default function useWakeLock() {
                 if ('wakeLock' in navigator && wakeLockRef.current === null) {
                     wakeLockRef.current = await navigator.wakeLock.request('screen');
                     console.log('✅ Khóa sáng màn hình thành công!');
+                    // Chạy thành công thì gỡ cái bẫy này ra cho nhẹ máy
+                    document.removeEventListener('pointerdown', handleFirstInteraction);
+                    document.removeEventListener('touchstart', handleFirstInteraction);
 
                     wakeLockRef.current.addEventListener('release', () => {
                         console.log('⚠️ Màn hình đã được thả rông.');
@@ -18,19 +21,17 @@ export default function useWakeLock() {
                 }
             } catch (err) {
                 // Nếu lỗi là do chưa tương tác, hệ thống sẽ im lặng chờ cú click tiếp theo
-                alert('Wake Lock bị từ chối: ' + err.message);
+                console.log('Wake Lock bị từ chối: ', err.message);
             }
         };
 
         // 1. Thử gọi ngay lập tức (Hên xui, nếu người dùng đã click đâu đó trước khi vào bàn thì sẽ ăn ngay)
-        // requestWakeLock();
+        requestWakeLock();
 
         // 2. CÀI BẪY: Lắng nghe cú chạm ĐẦU TIÊN của người dùng vào màn hình để kích hoạt
         const handleFirstInteraction = () => {
             requestWakeLock();
             // Chạy thành công thì gỡ cái bẫy này ra cho nhẹ máy
-            // document.removeEventListener('pointerdown', handleFirstInteraction);
-            // document.removeEventListener('touchstart', handleFirstInteraction);
         };
         document.addEventListener('pointerdown', handleFirstInteraction);
         document.addEventListener('touchstart', handleFirstInteraction);
