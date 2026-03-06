@@ -17,37 +17,17 @@ export default function Card({ rank, suit, style, className = '', scale = 1 }) {
     const label = RANK_LABELS[rank];
     const suitInfo = SUIT_ICONS[suit] || SUIT_ICONS['spade']; // mặc định Bích nếu sai dữ liệu
 
-    const [isGhost, setIsGhost] = useState(false);
-    const handleTap = (e) => {
-        e.stopPropagation();
-
-        // Nếu đang là bóng ma (đang trượt) thì cấm không cho bấm double-tap
-        if (isGhost) return;
-
-        // 2. Kích hoạt xuyên thấu
-        setIsGhost(true);
-
-        // 3. Hẹn giờ 250ms sau (đợi CSS trượt xong) thì gỡ xuyên thấu ra
-        // Để người chơi còn có thể bấm vào lá bài đó để hạ nó xuống
-        setTimeout(() => {
-            setIsGhost(false);
-        }, 300);
-    };
-
     return (
         <div
-            onPointerDown={handleTap}
             style={{ ...style, width: `${Math.round(scale * 80)}px` }}
             className={`
                         relative 
                         bg-white rounded-lg border border-slate-300 
-                        flex flex-col select-none transition-all duration-300
+                        flex flex-col select-none transition-all duration-100
                         shadow-[0_2px_8px_rgba(0,0,0,0.5)] border-zinc-500
                         p-1
                         aspect-[2/3]
                         ${className}
-
-                        ${isGhost ? 'pointer-events-none' : 'pointer-events-auto'}
                     `}
         >
             {/* 1. GÓC TRÊN BÊN TRÁI: Chữ đứng thẳng, to rõ */}
