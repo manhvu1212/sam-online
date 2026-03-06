@@ -5,12 +5,26 @@
   --font-sans: "Montserrat", sans-serif;
 }
 
+/* Đặt ở trên cùng file CSS của bạn */
+html,
+body {
+  /* Cấm Safari trên iOS tự động phóng to chữ */
+  -webkit-text-size-adjust: 100%;
+
+  /* Cấm các trình duyệt khác làm điều tương tự */
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
-  background-color: #09090b; /* Màu kẽm đen tuyền (zinc-950) */
+  background-color: #09090b;
+  /* Màu kẽm đen tuyền (zinc-950) */
   color: white;
-  font-family: var(--font-sans); /* Áp dụng font cho toàn bộ body */
-  overflow: hidden; /* Chống cuộn trang trên mobile */
-  -webkit-font-smoothing: antialiased; /* Làm font chữ sắc nét hơn trên màn hình xịn */
+  font-family: var(--font-sans);
+  /* Áp dụng font cho toàn bộ body */
+  overflow: hidden;
+  /* Chống cuộn trang trên mobile */
+  -webkit-font-smoothing: antialiased;
+  /* Làm font chữ sắc nét hơn trên màn hình xịn */
   -moz-osx-font-smoothing: grayscale;
 }

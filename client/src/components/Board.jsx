@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import useWakeLock from '../hooks/useWakeLock';
 import GameLogic from '../utils/GameLogic';
 import RoomHeader from './RoomHeader';
 import CenterStage from './CenterStage';
@@ -7,6 +8,8 @@ import PlayerHand from './PlayerHand';
 import GameOverModal from './GameOverModal';
 
 export default function Board({ socket, room, user, myCards }) {
+    useWakeLock();
+    
     // --- 1. STATES ---
     const isReady = room.matchPlayes.find(p => p.id == user.id)?.isReady
     const skipSam = room.matchPlayes.find(p => p.id == user.id)?.skipSam
@@ -45,7 +48,15 @@ export default function Board({ socket, room, user, myCards }) {
 
     // --- 4. RENDER GIAO DIỆN CHÍNH ---
     return (
-        <div className="w-full h-screen bg-[#0a0a0c] text-zinc-200 overflow-hidden flex flex-col">
+        <div className="w-full h-[100dvh] 
+                        bg-[#0a0a0c] text-zinc-200 
+                        overflow-hidden overscroll-none
+                        pt-[env(safe-area-inset-top)]
+                        pb-[env(safe-area-inset-bottom)]
+                        pl-[env(safe-area-inset-left)]
+                        pr-[env(safe-area-inset-right)]
+                        flex flex-col"
+        >
 
             <RoomHeader code={room.code} bet={room.settings.bet} />
 
@@ -59,7 +70,7 @@ export default function Board({ socket, room, user, myCards }) {
                 />
             </div>
 
-            <div className="shrink-0 w-full pt-5 pb-15 md:pb-5 flex flex-col items-center justify-center pointer-events-none z-30 overflow-x-auto">
+            <div className="shrink-0 w-full pt-5 pb-3 flex flex-col items-center justify-center pointer-events-none z-30 overflow-x-auto">
                 <ActionBar
                     socket={socket}
                     roomStatus={room.status}

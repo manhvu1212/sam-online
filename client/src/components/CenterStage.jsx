@@ -12,7 +12,7 @@ const CenterStage = memo(function CenterStage({
 }) {
 
     const isMobile = window.innerWidth < 768;
-    const scale = isMobile ? 0.9 : 1.2
+    const scale = isMobile ? 0.8 : 1
 
     // --- 2. LOGIC TÍNH TOÁN ---
     const rotatedPlayers = useMemo(() => {
