@@ -30,7 +30,7 @@ export default function useWakeLock() {
             requestWakeLock();
             // Chạy thành công thì gỡ cái bẫy này ra cho nhẹ máy
             // document.removeEventListener('pointerdown', handleFirstInteraction);
-            // document.removeEventListener('touchstart', enableWakeLock);
+            // document.removeEventListener('touchstart', handleFirstInteraction);
         };
         document.addEventListener('pointerdown', handleFirstInteraction);
         document.addEventListener('touchstart', handleFirstInteraction);
