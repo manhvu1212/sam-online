@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Card from './Card';
 import GameLogic from '../utils/GameLogic';
 
@@ -7,9 +7,14 @@ export default function PlayerHand({ myCards, lastMove, roomStatus, selectedCard
         return <p className="text-zinc-600 text-xs font-bold tracking-widest mb-2">CHƯA CÓ BÀI</p>;
     }
 
+    const [isToggle, setIsToggle] = useState(false);
+
     // --- THUẬT TOÁN CHỌN BÀI THÔNG MINH ---
     const toggleCardSelection = (clickedCard) => {
         if (roomStatus !== "PLAYING") return
+        if (isToggle) return
+
+        setIsToggle(true)
 
         // 1. Cụp lá bài xuống nếu đang được chọn
         const isSelected = selectedCards.some(c => c.rank === clickedCard.rank && c.suit === clickedCard.suit);
@@ -67,6 +72,8 @@ export default function PlayerHand({ myCards, lastMove, roomStatus, selectedCard
 
         // TRƯỜNG HỢP D: Mở vòng (Tự do nhặt bài)
         setSelectedCards(prev => [...prev, clickedCard]);
+
+        setIsToggle(false)
     };
 
     const isMobile = window.innerWidth < 768;
