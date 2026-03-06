@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import useAutoWakeLock from '../hooks/useAutoWakeLock';
+import useAutoWakeLock from '../hooks/useWakeLock';
 import GameLogic from '../utils/GameLogic';
 import RoomHeader from './RoomHeader';
 import CenterStage from './CenterStage';
