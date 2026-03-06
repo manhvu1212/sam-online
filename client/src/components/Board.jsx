@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import useAutoWakeLock from '../hooks/useWakeLock';
+import useWakeLock from '../hooks/useWakeLock';
 import GameLogic from '../utils/GameLogic';
 import RoomHeader from './RoomHeader';
 import CenterStage from './CenterStage';
@@ -8,7 +8,7 @@ import PlayerHand from './PlayerHand';
 import GameOverModal from './GameOverModal';
 
 export default function Board({ socket, room, user, myCards }) {
-    useAutoWakeLock();
+    useWakeLock();
 
     // --- 1. STATES ---
     const isReady = room.matchPlayes.find(p => p.id == user.id)?.isReady
