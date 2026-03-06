@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 // Dùng Unicode hoặc SVG cho chất bài sắc nét (Khuyên dùng SVG)
 const SUIT_ICONS = {
