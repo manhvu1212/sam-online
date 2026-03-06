@@ -17,7 +17,11 @@ export function useSocket() {
         }
 
         // 3. Đưa CMND cho bảo vệ (Server) lúc kết nối
-        const newSocket = io('http://localhost:3000', {
+        const isLocal = import.meta.env.DEV;
+        const SERVER_URL = isLocal ? "http://localhost:3000" : undefined;
+        const newSocket = io(SERVER_URL, {
+            path: "/socket.io",
+            transports: ['websocket', 'polling'],
             query: { playerId: playerId }
         });
 
