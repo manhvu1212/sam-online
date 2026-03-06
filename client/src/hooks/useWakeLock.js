@@ -10,17 +10,17 @@ export default function useWakeLock() {
                 // Kiểm tra xem trình duyệt có hỗ trợ công nghệ này không
                 if ('wakeLock' in navigator) {
                     wakeLockRef.current = await navigator.wakeLock.request('screen');
-                    console.log('Khóa sáng màn hình thành công! Game on! 🚀');
+                    alert('Khóa sáng màn hình thành công! Game on! 🚀');
 
                     // Lắng nghe sự kiện lỡ hệ thống tự ngắt (ví dụ pin yếu)
                     wakeLockRef.current.addEventListener('release', () => {
-                        console.log('Màn hình đã được thả rông (có thể tắt).');
+                        alert('Màn hình đã được thả rông (có thể tắt).');
                     });
                 } else {
-                    console.warn('Trình duyệt của bạn không hỗ trợ Wake Lock API.');
+                    alert('Trình duyệt của bạn không hỗ trợ Wake Lock API.');
                 }
             } catch (err) {
-                console.error('Không thể khóa sáng màn hình:', err.name, err.message);
+                alert('Không thể khóa sáng màn hình:', err.name, err.message);
             }
         };
 
