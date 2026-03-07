@@ -9,11 +9,11 @@ const GameOverModal = memo(function GameOverModal({ user, results, onReadyNext }
 
     return (
         <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md 
-                        p-4 pt-15
+                        flex p-4 pt-15
                         items-center justify-center">
 
             <div className="bg-zinc-900 border border-amber-600/50 rounded-2xl shadow-[0_0_50px_rgba(245,158,11,0.2)] 
-                            max-h-[90dvh] flex flex-col
+                            max-h-full flex flex-col
                             w-full max-w-2xl overflow-hidden">
 
                 <div className="shrink-0 bg-amber-600 py-3 text-center shadow-md border-b border-amber-500">
