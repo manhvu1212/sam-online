@@ -183,33 +183,28 @@ io.on('connection', (socket) => {
             const player = room.players.find(p => p.id === socket.playerId);
             if (player) {
                 io.to(code).emit('NOTIFICATION', { message: `${socket.playerName} bị rớt mạng`, type: 'loading' });
-                if (room.players.length <= 1) {
-                    clearInterval(room.timer);
-                    delete rooms[code];
-                } else {
-                    if (room.status === 'SAM_WAITING' || room.status === 'PLAYING') {
-                        // Đang chơi thì sẽ giữ thông tin đến hết ván
-                        player.status = "OFFLINE"
-                    }
-                    if (room.hostId === socket.playerId) room.hostId = room.players.find(p => p.id != socket.playerId).id;
-                    io.to(code).emit('ROOM_UPDATE', room.getSafeRoomData());
-                }
+                player.status = "OFFLINE"
+                if (room.hostId === socket.playerId) room.hostId = room.players.find(p => p.id != socket.playerId).id;
+                io.to(code).emit('ROOM_UPDATE', room.getSafeRoomData());
 
                 const timeoutHandleDisconnect = setTimeout(() => {
-                    if (room.players.length <= 1) {
-                        clearInterval(room.timer);
-                        delete rooms[code];
-                    } else {
-                        if (room.status === 'SAM_WAITING' || room.status === 'PLAYING') {
-                            // Đang chơi thì sẽ giữ thông tin đến hết ván
+                    const room = rooms[code]
+                    if (room) {
+                        if (room.players.length <= 1) {
+                            clearInterval(room.timer);
+                            delete rooms[code];
                         } else {
-                            // Đang chờ hoặc đã chơi xong thì sẽ xóa đi
-                            room.removePlayer(player.id, io, socket)
-                            io.to(code).emit('ROOM_UPDATE', room.getSafeRoomData());
+                            if (room.status === 'SAM_WAITING' || room.status === 'PLAYING') {
+                                // Đang chơi thì sẽ giữ thông tin đến hết ván
+                            } else {
+                                // Đang chờ hoặc đã chơi xong thì sẽ xóa đi
+                                room.removePlayer(player.id, io, socket)
+                                io.to(code).emit('ROOM_UPDATE', room.getSafeRoomData());
 
-                            // NẾU TẤT CẢ NGƯỜI CHƠI CON LẠI ĐÃ READY -> TỰ ĐỘNG CHIA BÀI!
-                            if (room.players.every(p => p.isReady)) {
-                                room.startDeal(io, socket);
+                                // NẾU TẤT CẢ NGƯỜI CHƠI CON LẠI ĐÃ READY -> TỰ ĐỘNG CHIA BÀI!
+                                if (room.players.every(p => p.isReady)) {
+                                    room.startDeal(io, socket);
+                                }
                             }
                         }
                     }
