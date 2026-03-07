@@ -8,7 +8,7 @@ const GameOverModal = memo(function GameOverModal({ user, results, onReadyNext }
     const scale = isMobile ? 0.7 : 0.9
 
     return (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 pt-15">
 
             <div className="bg-zinc-900 border border-amber-600/50 rounded-2xl shadow-[0_0_50px_rgba(245,158,11,0.2)] w-full max-w-2xl overflow-hidden">
 
