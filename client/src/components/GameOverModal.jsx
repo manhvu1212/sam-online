@@ -28,7 +28,7 @@ const GameOverModal = memo(function GameOverModal({ user, results, onReadyNext }
                 </div>
 
                 {/* Thông tin */}
-                <div className="p-4 sm:px-6 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
+                <div className="flex-1 p-4 sm:px-6 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
                     {results.map((r, index) => {
                         const isMe = r.id === user.id;
                         return (
