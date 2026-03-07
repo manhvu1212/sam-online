@@ -67,7 +67,7 @@ io.on('connection', (socket) => {
 
             io.to(code).emit('NOTIFICATION', { message: `${socket.playerName} vừa trở lại`, type: 'success', config: { id: `${player.id}_NETWORK` } });
             // Gửi lại tình trạng phòng và bài trên tay cho họ
-            socket.emit('ROOM_UPDATE', room.getSafeRoomData());
+            io.to(code).emit('ROOM_UPDATE', room.getSafeRoomData());
             socket.emit('GAME_DEAL_CARDS', player.cards);
             console.log(`[*] Khách ${socket.playerName} vừa F5 và vào lại bàn ${code}`);
             isPlaying = true
