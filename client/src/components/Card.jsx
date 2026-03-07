@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 
 // Dùng Unicode hoặc SVG cho chất bài sắc nét (Khuyên dùng SVG)
 const SUIT_ICONS = {
-    heart: { char: '♥', color: 'text-red-600' }, // emerald-600
-    diamond: { char: '♦', color: 'text-red-600' },
-    club: { char: '♣', color: 'text-black' }, // zinc-900 (trông tối hơn #000)
-    spade: { char: '♠', color: 'text-black' }
+    heart: { char: '♥\uFE0E', color: 'text-red-600' }, // emerald-600
+    diamond: { char: '♦\uFE0E', color: 'text-red-600' },
+    club: { char: '♣\uFE0E', color: 'text-black' }, // zinc-900 (trông tối hơn #000)
+    spade: { char: '♠\uFE0E', color: 'text-black' }
 };
 
 const RANK_LABELS = {
