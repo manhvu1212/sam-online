@@ -220,6 +220,7 @@ io.on('connection', (socket) => {
             if (waitingPlayer) {
                 waitingPlayer.status = "OFFLINE"
                 const timeoutHandleDisconnect = setTimeout(() => {
+                    const room = rooms[code]
                     const waitingPlayerIndex = room.waitingPlayers.findIndex(p.id == socket.playerId)
                     room.waitingPlayers.splice(waitingPlayerIndex, 1)
                     disconnectTimers.delete(socket.playerId);
