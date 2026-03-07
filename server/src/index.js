@@ -54,6 +54,7 @@ io.on('connection', (socket) => {
     }
 
     // --- NẾU NGƯỜI CHƠI F5 TRONG LÚC ĐANG CHƠI (TÁI KẾT NỐI) ---
+    let isPlaying = false
     for (const code in rooms) {
         const room = rooms[code];
         const player = room.players.find(p => p.id === socket.playerId);
@@ -69,6 +70,7 @@ io.on('connection', (socket) => {
             socket.emit('ROOM_UPDATE', room.getSafeRoomData());
             socket.emit('GAME_DEAL_CARDS', player.cards);
             console.log(`[*] Khách ${socket.playerName} vừa F5 và vào lại bàn ${code}`);
+            isPlaying = true
             break;
         }
 
@@ -77,8 +79,13 @@ io.on('connection', (socket) => {
             waitingPlayer.socketId = socket.id;
             waitingPlayer.status = "ONLINE";
             socket.join(code);
+            socket.emit('ROOM_UPDATE', room.getSafeRoomData());
+            isPlaying = true
             break;
         }
+    }
+    if (!isPlaying) {
+        socket.emit('ROOM_UPDATE', {});
     }
 
     // --- 2. LOBBY: CẬP NHẬT TÊN VÀO DATABASE ---
