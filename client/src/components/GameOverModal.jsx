@@ -8,22 +8,26 @@ const GameOverModal = memo(function GameOverModal({ user, results, onReadyNext }
     const scale = isMobile ? 0.7 : 0.9
 
     return (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 pt-15">
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md 
+                        max-h-[90dvh]
+                        flex flex-col p-4 pt-15
+                        items-center justify-center ">
 
             <div className="bg-zinc-900 border border-amber-600/50 rounded-2xl shadow-[0_0_50px_rgba(245,158,11,0.2)] w-full max-w-2xl overflow-hidden">
 
-                <div className="bg-amber-600 py-3 text-center shadow-md border-b border-amber-500">
+                <div className="shrink-0 bg-amber-600 py-3 text-center shadow-md border-b border-amber-500">
                     <h2 className="text-zinc-950 font-black text-xl tracking-[0.2em] uppercase drop-shadow-sm">TỔNG KẾT VÁN ĐẤU</h2>
                 </div>
 
                 {/* Tiêu đề các cột */}
-                <div className="grid grid-cols-12 gap-2 px-6 py-2 border-b border-zinc-800 text-[10px] font-black text-zinc-500 tracking-widest uppercase">
+                <div className="shrink-0 grid grid-cols-12 gap-2 px-6 py-2 border-b border-zinc-800 text-[10px] font-black text-zinc-500 tracking-widest uppercase">
                     <div className="col-span-5">Người chơi</div>
                     <div className="col-span-3 text-right">Ván này</div>
                     <div className="col-span-4 text-right text-amber-500/50">Sổ nợ (Tổng)</div>
                 </div>
 
-                <div className="p-4 sm:px-6 flex flex-col gap-2 max-h-[80dvh] overflow-y-auto custom-scrollbar">
+                {/* Thông tin */}
+                <div className="p-4 sm:px-6 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
                     {results.map((r, index) => {
                         const isMe = r.id === user.id;
                         return (
@@ -98,7 +102,7 @@ const GameOverModal = memo(function GameOverModal({ user, results, onReadyNext }
                 </div>
 
                 {/* Nút chơi tiếp chung cho cả làng */}
-                <div className="p-4 bg-zinc-950 border-t border-zinc-800 flex justify-center">
+                <div className="shrink-0 p-4 bg-zinc-950 border-t border-zinc-800 flex justify-center">
                     <button
                         onClick={onReadyNext}
                         className="w-full sm:w-auto px-12 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:brightness-110 text-zinc-950 font-black text-sm tracking-widest rounded-lg shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all"
