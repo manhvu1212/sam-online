@@ -102,11 +102,14 @@ export default class Room {
     }
 
     removePlayer(playerId, io, socket) {
+        console.log("Remove Player ", playerId)
         const player = this.players.find(p => p.id == playerId)
         if (player) {
+            console.log("Remove Player ", player.name)
             const playerIndex = this.players.findIndex(p => p.id == playerId)
             if (playerIndex >= 0) {
                 this.players.slice(playerIndex, 1)
+                console.log(JSON.stringify(this.players))
             }
             if (this.ledger[player.id] != 0 && !this.removedPlayers.find(p => p.id == playerId)) {
                 this.removedPlayers.push(player)
