@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 
-const RoomHeader = memo(function RoomHeader({ code, bet }) { // 2. Bọc memo vào    
+const RoomHeader = memo(function RoomHeader({ code, bet, onQuitGame }) { // 2. Bọc memo vào    
     return (
         <>
             <div className="absolute top-3 left-3 z-200 pointer-events-auto">
@@ -12,7 +12,7 @@ const RoomHeader = memo(function RoomHeader({ code, bet }) { // 2. Bọc memo v�
                 <div className="bg-zinc-900/50 backdrop-blur border border-zinc-800/50 rounded px-2 py-1 shadow-md">
                     <span className="text-[10px] text-zinc-400">Cược: <span className="text-amber-500 font-bold">{bet / 1000}k</span></span>
                 </div>
-                <button onClick={() => window.location.reload()} className="bg-zinc-800 border border-red-900/50 text-red-500 rounded px-3 py-2 text-[10px] font-bold shadow-md hover:bg-zinc-700 transition-colors">
+                <button onClick={onQuitGame} className="bg-zinc-800 border border-red-900/50 text-red-500 rounded px-3 py-2 text-[10px] font-bold shadow-md hover:bg-zinc-700 transition-colors">
                     THOÁT
                 </button>
             </div>

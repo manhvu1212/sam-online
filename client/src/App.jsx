@@ -38,8 +38,10 @@ function App() {
         toast.success(data.message, { ...data.config, duration: 2000 });
       } else if (data.type == 'loading') {
         toast.loading(data.message, { ...data.config, duration: 2000 });
-      } else {
+      } else if (data.type == 'error') {
         toast.error(data.message, { ...data.config, duration: 2000 });
+      } else {
+        toast.custom(data.message, { ...data.config, duration: 2000 });
       }
     });
 

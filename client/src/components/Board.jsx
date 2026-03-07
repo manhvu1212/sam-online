@@ -26,6 +26,7 @@ export default function Board({ socket, room, user, myCards }) {
 
     // --- 3. EVENT HANDLERS (TRUYỀN XUỐNG COMPONENT CON) ---
     const handleStartGame = useCallback(() => socket.emit('START_GAME', room.code), [socket, room.code]);
+    const handleQuitGame = useCallback(() => socket.emit('QUIT_GAME', room.code), [socket, room.code]);
     const handleRequestSam = useCallback(() => socket.emit('REQUEST_SAM', room.code), [socket, room.code]);
     const handleSkipSam = useCallback(() => {
         socket.emit('SKIP_SAM', room.code);
@@ -53,7 +54,7 @@ export default function Board({ socket, room, user, myCards }) {
                         flex flex-col"
         >
 
-            <RoomHeader code={room.code} bet={room.settings.bet} />
+            <RoomHeader code={room.code} bet={room.settings.bet} onQuitGame={handleQuitGame} />
 
             <div className="flex-1 min-h-0 pt-15 flex flex-col items-center justify-center z-10 pointer-events-none">
                 <CenterStage

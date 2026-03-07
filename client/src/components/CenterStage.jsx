@@ -180,27 +180,6 @@ const CenterStage = memo(function CenterStage({
                             </div>
                         );
                     })()}
-                    <div className="flex justify-center w-full max-w-full mb-10">
-                        {[...room.lastMove.cards].sort((a, b) => a.rank - b.rank).map((c, i) => {
-                            // Kiểm tra xem đây có phải lá cuối cùng không
-                            const isLast = i === room.lastMove.cards.length - 1;
-
-                            return (
-                                <div
-                                    key={`${c.rank}-${c.suit}`}
-                                    // KHI KHUNG BỊ CHẬT: Các lá trước sẽ tự động bị bóp nhỏ lại nhờ class 'shrink'
-                                    className={`relative  ${isLast ? `shrink-0 w-[clamp(40px,12vw,80px)]` : `shrink min-w-0 w-[clamp(27px,8vw,53px)]`}`}
-                                    style={{ zIndex: i }}
-                                >
-                                    <Card
-                                        rank={c.rank}
-                                        suit={c.suit}
-                                        className={'w-[clamp(40px,12vw,80px)] text-[clamp(40px,12vw,80px)]'}
-                                    />
-                                </div>
-                            );
-                        })}
-                    </div>
                 </div>
             )}
 

@@ -16,6 +16,7 @@ export default class Room {
         this.status = 'WAITING'; // WAITING, SAM_WAITING, PLAYING, ENDED
         this.players = [];
         this.waitingPlayers = [];
+        this.removedPlayers = [];
         this.currentTurnId = null;
         this.samPlayerId = null;
         this.lastMove = null;
@@ -97,6 +98,26 @@ export default class Room {
             this.ledger[player.id] = 0;
         }
         socket.join(this.code);
+        io.to(this.code).emit('ROOM_UPDATE', this.getSafeRoomData());
+    }
+
+    removePlayer(playerId, io, socket) {
+        const player = this.players.find(p => p.id == playerId)
+        if (player) {
+            const playerIndex = this.players.findIndex(p => p.id == playerId)
+            if (playerIndex >= 0) {
+                this.players.slice(playerIndex, 0)
+            }
+            if (this.ledger[player.id] != 0 && !this.removedPlayers.find(p => p.id == playerId)) {
+                this.removedPlayers.push(player)
+            }
+        }
+        const waitingPlayerIndex = this.waitingPlayers.findIndex(p => p.id == playerId)
+        if (waitingPlayerIndex >= 0) {
+            this.waitingPlayers.slice(waitingPlayerIndex, 0)
+        }
+        socket.leave(this.code);
+        io.to(this.code).emit("NOTIFICATION", { message: `${socket.playerName} vừa rời khởi phòng` })
         io.to(this.code).emit('ROOM_UPDATE', this.getSafeRoomData());
     }
 
@@ -574,6 +595,19 @@ export default class Room {
         } else {
             this.ledger[samPlayerId] -= totalMoneyExchange;
         }
+
+        this.removedPlayers.forEach(p => {
+            matchResults.push({
+                id: p.id,
+                name: p.name,
+                cardCount: 0,
+                cards: 0,
+                moneyChange: 0,
+                totalScore: this.ledger[p.id],
+                detail:  `Đã rời phòng`,
+                isWinner: false
+            });
+        })
 
         // Thêm người báo Sâm vào bảng kết quả
         matchResults.unshift({

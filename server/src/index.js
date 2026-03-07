@@ -14,6 +14,7 @@ const io = new Server(httpServer, {
 });
 
 const rooms = {};
+const disconnectTimers = new Map();
 
 const generateRoomCode = () => Math.random().toString(36).substring(2, 7).toUpperCase();
 
@@ -47,22 +48,35 @@ io.on('connection', (socket) => {
     // Trả thông tin hồ sơ về cho trình duyệt hiển thị
     socket.emit('USER_INFO', user);
 
+    if (disconnectTimers.has(socket.playerId)) {
+        clearTimeout(disconnectTimers.get(socket.playerId));
+        disconnectTimers.delete(socket.playerId);
+    }
+
     // --- NẾU NGƯỜI CHƠI F5 TRONG LÚC ĐANG CHƠI (TÁI KẾT NỐI) ---
     for (const code in rooms) {
         const room = rooms[code];
-        const playerInRoom = room.players.find(p => p.id === socket.playerId);
+        const player = room.players.find(p => p.id === socket.playerId);
 
-        if (playerInRoom) {
+        if (player) {
             // Cập nhật lại socketId mới cho người chơi này để server biết đường gửi bài
-            playerInRoom.socketId = socket.id;
-            playerInRoom.status = "ONLINE";
+            player.socketId = socket.id;
+            player.status = "ONLINE";
             socket.join(code);
 
-            io.to(code).emit('NOTIFICATION', { message: `${socket.playerName} vừa trở lại`, type: 'success', config: { id: `${playerInRoom.id}_NETWORK` } });
+            io.to(code).emit('NOTIFICATION', { message: `${socket.playerName} vừa trở lại`, type: 'success', config: { id: `${player.id}_NETWORK` } });
             // Gửi lại tình trạng phòng và bài trên tay cho họ
             socket.emit('ROOM_UPDATE', room.getSafeRoomData());
-            socket.emit('GAME_DEAL_CARDS', playerInRoom.cards);
+            socket.emit('GAME_DEAL_CARDS', player.cards);
             console.log(`[*] Khách ${socket.playerName} vừa F5 và vào lại bàn ${code}`);
+            break;
+        }
+
+        const waitingPlayer = room.waitingPlayers.find(p => p.id === socket.playerId);
+        if (waitingPlayer) {
+            waitingPlayer.socketId = socket.id;
+            waitingPlayer.status = "ONLINE";
+            socket.join(code);
             break;
         }
     }
@@ -91,7 +105,8 @@ io.on('connection', (socket) => {
             const newPlayer = {
                 id: socket.playerId,
                 socketId: socket.id,
-                name: socket.playerName
+                name: socket.playerName,
+                status: "ONLINE"
             };
             room.addPlayer(newPlayer, io, socket)
 
@@ -110,7 +125,8 @@ io.on('connection', (socket) => {
         const newPlayer = {
             id: socket.playerId,
             socketId: socket.id,
-            name: socket.playerName
+            name: socket.playerName,
+            status: "ONLINE"
         };
 
         if (room.status === 'SAM_WAITING' || room.status === 'PLAYING') {
@@ -121,11 +137,22 @@ io.on('connection', (socket) => {
         } else {
             room.addPlayer(newPlayer, io, socket)
         }
+        const removedPlayerIndex = room.removedPlayers.findIndex(p => p.id == newPlayer.id)
+        if (removedPlayerIndex >= 0) {
+            room.removedPlayers.splice(removedPlayerIndex, 1)
+        }
     });
 
     // --- CÁC SỰ KIỆN GAME (Gọi vào Class Room) ---
     socket.on('START_GAME', (code) => {
         if (rooms[code] && rooms[code].hostId === socket.playerId) rooms[code].startDeal(io, socket);
+    });
+
+    socket.on('QUIT_GAME', (code) => {
+        if (rooms[code]) {
+            rooms[code].removePlayer(socket.playerId, io, socket);
+        }
+        socket.emit('ROOM_UPDATE', {})
     });
 
     socket.on('REQUEST_SAM', (code) => {
@@ -151,41 +178,58 @@ io.on('connection', (socket) => {
     // --- XỬ LÝ SỰ CỐ: THOÁT GAME ---
     socket.on('disconnect', () => {
         console.log(`[-] Socket ngắt kết nối: ${socket.id}`);
-
         for (const code in rooms) {
             const room = rooms[code];
             const player = room.players.find(p => p.id === socket.playerId);
-
             if (player) {
+                io.to(code).emit('NOTIFICATION', { message: `${socket.playerName} bị rớt mạng`, type: 'loading' });
                 if (room.players.length <= 1) {
                     clearInterval(room.timer);
                     delete rooms[code];
                 } else {
-                    let isReadyToNew = false
                     if (room.status === 'SAM_WAITING' || room.status === 'PLAYING') {
                         // Đang chơi thì sẽ giữ thông tin đến hết ván
                         player.status = "OFFLINE"
-                    } else {
-                        // Đang chờ hoặc đã chơi xong thì sẽ xóa đi
-                        const playerIndex = room.players.findIndex(p => p.id === socket.playerId);
-                        room.players.splice(playerIndex, 1);
-
-                        // NẾU TẤT CẢ NGƯỜI CHƠI CON LẠI ĐÃ READY -> TỰ ĐỘNG CHIA BÀI!
-                        isReadyToNew = room.players.every(p => p.isReady)
                     }
                     if (room.hostId === socket.playerId) room.hostId = room.players.find(p => p.id != socket.playerId).id;
                     io.to(code).emit('ROOM_UPDATE', room.getSafeRoomData());
-                    io.to(code).emit('NOTIFICATION', { message: `${socket.playerName} bị rớt mạng`, type: 'loading', config: { id: `${player.id}_NETWORK` } });
-                    if (isReadyToNew) room.startDeal(io, socket);
                 }
 
-                break;
+                const timeoutHandleDisconnect = setTimeout(() => {
+                    if (room.players.length <= 1) {
+                        clearInterval(room.timer);
+                        delete rooms[code];
+                    } else {
+                        if (room.status === 'SAM_WAITING' || room.status === 'PLAYING') {
+                            // Đang chơi thì sẽ giữ thông tin đến hết ván
+                        } else {
+                            // Đang chờ hoặc đã chơi xong thì sẽ xóa đi
+                            room.removePlayer(player.id, io, socket)
+                            io.to(code).emit('ROOM_UPDATE', room.getSafeRoomData());
+
+                            // NẾU TẤT CẢ NGƯỜI CHƠI CON LẠI ĐÃ READY -> TỰ ĐỘNG CHIA BÀI!
+                            if (room.players.every(p => p.isReady)) {
+                                room.startDeal(io, socket);
+                            }
+                        }
+                    }
+
+                    disconnectTimers.delete(socket.playerId);
+                }, 30 * 1000)
+                disconnectTimers.set(socket.playerId, timeoutHandleDisconnect);
+
+                break
             }
 
             const waitingPlayer = room.waitingPlayers.find(p => p.id === socket.playerId);
             if (waitingPlayer) {
-                const playerIndex = room.waitingPlayers.findIndex(p => p.id === socket.playerId);
-                room.waitingPlayers.splice(playerIndex, 1);
+                waitingPlayer.status = "OFFLINE"
+                const timeoutHandleDisconnect = setTimeout(() => {
+                    const waitingPlayerIndex = room.waitingPlayers.findIndex(p.id == socket.playerId)
+                    room.waitingPlayers.splice(waitingPlayerIndex, 1)
+                    disconnectTimers.delete(socket.playerId);
+                }, 30 * 1000)
+                disconnectTimers.set(socket.playerId, timeoutHandleDisconnect);
             }
         }
     });
