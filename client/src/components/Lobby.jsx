@@ -36,7 +36,10 @@ export default function Lobby({ socket, user }) {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center h-screen bg-zinc-950 text-zinc-200 relative overflow-hidden">
+        <div className="w-full h-[100dvh] overflow-hidden overscroll-none
+                        flex flex-col items-center justify-center bg-zinc-950 text-zinc-200 
+                        relative"
+        >
 
             {/* Hiệu ứng ánh sáng vàng đồng mờ ảo phía sau nền */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-600/10 rounded-full blur-[120px] pointer-events-none"></div>
