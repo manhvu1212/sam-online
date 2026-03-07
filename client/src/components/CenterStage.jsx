@@ -127,6 +127,59 @@ const CenterStage = memo(function CenterStage({
                     <p className="text-zinc-500 text-xs font-bold tracking-widest mb-3 uppercase opacity-80">
                         {room.players.find(p => p.id === room.lastMove.playerId)?.name || 'Ai đó'} ĐÁNH
                     </p>
+                    {/* 1. Xử lý logic chia mảng trước khi render */}
+                    {(() => {
+                        // Sắp xếp bài từ bé đến lớn như cũ
+                        const sortedCards = [...room.lastMove.cards].sort((a, b) => a.rank - b.rank);
+
+                        // Tạo một mảng chứa các "dòng" bài
+                        const rows = [];
+                        if (sortedCards.length > 6) {
+                            // Nếu lớn hơn 6 lá, chia làm 2 nửa đều nhau (ví dụ: 7 lá -> 4 lá trên, 3 lá dưới)
+                            const half = Math.ceil(sortedCards.length / 2);
+                            rows.push(sortedCards.slice(0, half));
+                            rows.push(sortedCards.slice(half));
+                        } else {
+                            // Nếu từ 6 lá trở xuống, giữ nguyên 1 dòng
+                            rows.push(sortedCards);
+                        }
+
+                        // 2. Render các dòng
+                        return (
+                            // Thẻ bọc ngoài cùng đổi thành flex-col để xếp dọc các dòng, thêm gap-y để tạo khoảng cách giữa 2 dòng
+                            <div className="flex flex-col items-center gap-y-2 mb-10 w-full">
+                                {rows.map((row, rowIndex) => (
+                                    // Mỗi dòng lại là một flex ngang như code cũ của bạn
+                                    <div key={rowIndex}
+                                        className={`
+                                                    flex justify-center w-full max-w-full relative
+                                                    ${rowIndex > 0 ? '-mt-[clamp(30px,9vw,60px)]' : ''}
+                                                `}
+                                        style={{ zIndex: rowIndex }}
+                                    >
+                                        {row.map((c, i) => {
+                                            // Tính toán isLast cho TỪNG DÒNG (để lá cuối của mỗi dòng bung đủ width)
+                                            const isLast = i === row.length - 1;
+
+                                            return (
+                                                <div
+                                                    key={`${c.rank}-${c.suit}`}
+                                                    className={`relative  ${isLast ? `shrink-0 w-[clamp(40px,12vw,80px)]` : `shrink min-w-0 w-[clamp(27px,8vw,53px)]`}`}
+                                                    style={{ zIndex: i }}
+                                                >
+                                                    <Card
+                                                        rank={c.rank}
+                                                        suit={c.suit}
+                                                        className={'w-[clamp(40px,12vw,80px)] text-[clamp(40px,12vw,80px)]'}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    })()}
                     <div className="flex justify-center w-full max-w-full mb-10">
                         {[...room.lastMove.cards].sort((a, b) => a.rank - b.rank).map((c, i) => {
                             // Kiểm tra xem đây có phải lá cuối cùng không
