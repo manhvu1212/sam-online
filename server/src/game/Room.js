@@ -102,14 +102,11 @@ export default class Room {
     }
 
     removePlayer(playerId, io, socket) {
-        console.log("Remove Player ", playerId)
         const player = this.players.find(p => p.id == playerId)
         if (player) {
-            console.log("Remove Player ", player.name)
             const playerIndex = this.players.findIndex(p => p.id == playerId)
             if (playerIndex >= 0) {
-                this.players.slice(playerIndex, 1)
-                console.log(JSON.stringify(this.players))
+                this.players.splice(playerIndex, 1)
             }
             if (this.ledger[player.id] != 0 && !this.removedPlayers.find(p => p.id == playerId)) {
                 this.removedPlayers.push(player)
@@ -117,7 +114,7 @@ export default class Room {
         }
         const waitingPlayerIndex = this.waitingPlayers.findIndex(p => p.id == playerId)
         if (waitingPlayerIndex >= 0) {
-            this.waitingPlayers.slice(waitingPlayerIndex, 1)
+            this.waitingPlayers.splice(waitingPlayerIndex, 1)
         }
         socket.leave(this.code);
         io.to(this.code).emit("NOTIFICATION", { message: `${socket.playerName} vừa rời khởi phòng` })
