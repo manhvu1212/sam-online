@@ -85,7 +85,7 @@ io.on('connection', (socket) => {
         }
     }
     if (!isPlaying) {
-        socket.emit('ROOM_UPDATE', {});
+        socket.emit('ROOM_UPDATE', null);
     }
 
     // --- 2. LOBBY: CẬP NHẬT TÊN VÀO DATABASE ---
@@ -159,7 +159,7 @@ io.on('connection', (socket) => {
         if (rooms[code]) {
             rooms[code].removePlayer(socket.playerId, io, socket);
         }
-        socket.emit('ROOM_UPDATE', {})
+        socket.emit('ROOM_UPDATE', null)
     });
 
     socket.on('REQUEST_SAM', (code) => {
