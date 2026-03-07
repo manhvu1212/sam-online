@@ -66,8 +66,8 @@ export default function Board({ socket, room, user, myCards }) {
             </div>
 
             <div className="shrink-0 w-full max-h-[30dvh]
-                            pt-5 pb-3 flex flex-col items-center justify-center 
-                            pointer-events-none z-30 overflow-x-auto
+                            pt-5 pb-3 flex flex-col items-center justify-start 
+                            pointer-events-none z-30
                             "
             >
                 <ActionBar
