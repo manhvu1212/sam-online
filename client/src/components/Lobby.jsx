@@ -5,18 +5,33 @@ export default function Lobby({ socket, user }) {
     const [roomCode, setRoomCode] = useState('');
     const [name, setName] = useState('');
 
+    const [localName, setLocalName] = useState(name);
+
     useEffect(() => {
-        if (user?.name) setName(user.name);
+        if (user?.name) {
+            setName(user.name);
+            setLocalName(user.name)
+        }
     }, [user]);
 
-    const handleUpdateName = () => {
-        if (name.trim() !== '') {
-            socket.emit('UPDATE_NAME', name);
-            localStorage.setItem('playerName', name);
-            toast.success('Đã lưu thông tin!', {
-                style: { background: '#18181b', color: '#f59e0b', border: '1px solid #3f3f46' },
-                iconTheme: { primary: '#f59e0b', secondary: '#18181b' },
-            });
+    // 2. MA THUẬT DEBOUNCE NẰM Ở ĐÂY
+    useEffect(() => {
+        if (localName === name) return;
+
+        // Đặt đồng hồ đếm ngược 500ms (Nửa giây)
+        const timeoutId = setTimeout(() => {
+            handleUpdateName(localName);
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+
+    }, [localName, name, handleUpdateName]);
+
+    const handleUpdateName = (namVal) => {
+        if (namVal.trim() !== '') {
+            setName(namVal)
+            socket.emit('UPDATE_NAME', namVal);
+            localStorage.setItem('playerName', namVal);
         } else {
             toast.error('Tên không được để trống!');
         }
@@ -68,17 +83,11 @@ export default function Lobby({ socket, user }) {
                 {/* Khung nhập tên tối giản */}
                 <div className="flex mb-8 rounded-xl overflow-hidden border border-zinc-800 focus-within:border-amber-500/50 transition-colors shadow-inner">
                     <input
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        value={localName}
+                        onChange={(e) => setLocalName(e.target.value)}
                         className="flex-1 p-3.5 bg-zinc-950 outline-none text-zinc-100 placeholder-zinc-700 font-medium"
                         placeholder="Tên người chơi"
                     />
-                    <button
-                        onClick={handleUpdateName}
-                        className="px-6 bg-zinc-800/80 hover:bg-zinc-700 text-amber-500 font-bold transition-colors text-sm tracking-wider border-l border-zinc-800"
-                    >
-                        LƯU
-                    </button>
                 </div>
 
                 {/* Đường kẻ chia cắt mờ */}
