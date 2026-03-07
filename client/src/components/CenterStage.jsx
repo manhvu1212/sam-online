@@ -11,9 +11,6 @@ const CenterStage = memo(function CenterStage({
     onStartGame,
 }) {
 
-    const isMobile = window.innerWidth < 768;
-    const scale = isMobile ? 0.8 : 1
-
     // --- 2. LOGIC TÍNH TOÁN ---
     const rotatedPlayers = useMemo(() => {
         const myIndex = room.players.findIndex((p) => p.id === user.id);
@@ -139,13 +136,13 @@ const CenterStage = memo(function CenterStage({
                                 <div
                                     key={`${c.rank}-${c.suit}`}
                                     // KHI KHUNG BỊ CHẬT: Các lá trước sẽ tự động bị bóp nhỏ lại nhờ class 'shrink'
-                                    className={`relative  ${isLast ? `shrink-0` : `shrink min-w-0`}`}
-                                    style={{ zIndex: i, width: `${isLast ? `${Math.round(scale * 80)}px` : `${Math.round(scale * 40)}px`}` }}
+                                    className={`relative  ${isLast ? `shrink-0 w-[clamp(40px,12vw,80px)]` : `shrink min-w-0 w-[clamp(27px,8vw,53px)]`}`}
+                                    style={{ zIndex: i }}
                                 >
                                     <Card
                                         rank={c.rank}
                                         suit={c.suit}
-                                        scale={scale}
+                                        className={'w-[clamp(40px,12vw,80px)] text-[clamp(40px,12vw,80px)]'}
                                     />
                                 </div>
                             );

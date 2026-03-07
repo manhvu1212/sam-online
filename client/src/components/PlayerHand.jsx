@@ -79,9 +79,6 @@ export default function PlayerHand({ myCards, lastMove, roomStatus, selectedCard
         setSelectedCardsWithToggle(prev => [...prev, clickedCard]);
     };
 
-    const isMobile = window.innerWidth < 768;
-    const scale = isMobile ? 0.7 : 1.2
-
     return (
 
 
@@ -95,14 +92,13 @@ export default function PlayerHand({ myCards, lastMove, roomStatus, selectedCard
                     <div
                         key={`${c.rank}-${c.suit}`}
                         onClick={() => toggleCardSelection(c)}
-                        className={`relative touch-manipulation select-none  ${isLast ? `shrink-0` : `shrink min-w-0`}`}
-                        style={{ zIndex: i, width: `${isLast ? `${scale * 80}px` : `${scale * 60}px`}` }}
+                        className={`relative touch-manipulation select-none  ${isLast ? `shrink-0 w-[clamp(50px,15vw,100px)]` : `shrink min-w-0 w-[clamp(34px,10vw,66px)]`}`}
+                        style={{ zIndex: i }}
                     >
                         <Card
                             rank={c.rank}
                             suit={c.suit}
-                            scale={scale}
-                            className={`${isSelected ? '-translate-y-4 md:-translate-y-6' : 'translate-y-0'}`}
+                            className={`w-[clamp(50px,15vw,100px)] text-[clamp(50px,15vw,100px)] ${isSelected ? '-translate-y-4 md:-translate-y-6' : 'translate-y-0'}`}
                         />
                     </div>
                 );

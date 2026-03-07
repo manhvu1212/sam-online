@@ -4,9 +4,6 @@ import Card from './Card';
 const GameOverModal = memo(function GameOverModal({ user, results, onReadyNext }) {
     if (!results) return null;
 
-    const isMobile = window.innerWidth < 768;
-    const scale = isMobile ? 0.7 : 0.9
-
     return (
         <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md 
                         flex p-4 pt-15
@@ -82,13 +79,13 @@ const GameOverModal = memo(function GameOverModal({ user, results, onReadyNext }
                                                 return (
                                                     <div
                                                         key={`${c.rank}-${c.suit}`}
-                                                        className={`relative  ${isLast ? `shrink-0` : `shrink min-w-0`}`}
-                                                        style={{ zIndex: i, width: `${isLast ? `${Math.round(scale * 80)}px` : `${Math.round(scale * 40)}px`}` }}
+                                                        className={`relative  ${isLast ? `shrink-0 w-[clamp(40px,12vw,80px)]` : `shrink min-w-0 w-[clamp(27px,8vw,53px)]`}`}
+                                                        style={{ zIndex: i }}
                                                     >
                                                         <Card
                                                             rank={c.rank}
                                                             suit={c.suit}
-                                                            scale={scale}
+                                                            className={'w-[clamp(40px,12vw,80px)] text-[clamp(40px,12vw,80px)]'}
                                                         />
                                                     </div>
                                                 );
