@@ -86,6 +86,7 @@ io.on('connection', (socket) => {
     }
     if (!isPlaying) {
         socket.emit('ROOM_UPDATE', null);
+        socket.emit('GAME_DEAL_CARDS', []);
     }
 
     // --- 2. LOBBY: CẬP NHẬT TÊN VÀO DATABASE ---
