@@ -7,6 +7,16 @@ export default function Lobby({ socket, user }) {
 
     const [localName, setLocalName] = useState(name);
 
+    const handleUpdateName = (namVal) => {
+        if (namVal.trim() !== '') {
+            setName(namVal)
+            socket.emit('UPDATE_NAME', namVal);
+            localStorage.setItem('playerName', namVal);
+        } else {
+            toast.error('Tên không được để trống!');
+        }
+    };
+
     useEffect(() => {
         if (user?.name) {
             setName(user.name);
@@ -26,16 +36,6 @@ export default function Lobby({ socket, user }) {
         return () => clearTimeout(timeoutId);
 
     }, [localName, name, handleUpdateName]);
-
-    const handleUpdateName = (namVal) => {
-        if (namVal.trim() !== '') {
-            setName(namVal)
-            socket.emit('UPDATE_NAME', namVal);
-            localStorage.setItem('playerName', namVal);
-        } else {
-            toast.error('Tên không được để trống!');
-        }
-    };
 
     const handleCreateRoom = () => {
         socket.emit('CREATE_ROOM', { bet: 1000 });
