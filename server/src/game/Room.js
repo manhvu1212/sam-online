@@ -231,7 +231,7 @@ export default class Room {
             matchResults.push({
                 id: p.id,
                 name: p.name,
-                cardCount: 10,
+                cardCount: p.cards.length,
                 cards: p.cards,
                 moneyChange: -penaltyMoney,
                 totalScore: this.ledger[p.id],
@@ -243,10 +243,23 @@ export default class Room {
         // Cộng tiền cho người Tới Trắng
         this.ledger[winner.id] += totalWinnerMoney;
 
+        this.removedPlayers.forEach(p => {
+            matchResults.push({
+                id: p.id,
+                name: p.name,
+                cardCount: 0,
+                cards: 0,
+                moneyChange: 0,
+                totalScore: this.ledger[p.id],
+                detail: `Đã rời phòng`,
+                isWinner: false
+            });
+        })
+
         matchResults.unshift({
             id: winner.id,
             name: winner.name,
-            cardCount: 0,
+            cardCount: winner.cards.length,
             cards: winner.cards, // Lật bài Tới Trắng cho cả làng chiêm ngưỡng
             moneyChange: totalWinnerMoney,
             totalScore: this.ledger[winner.id],
@@ -469,11 +482,24 @@ export default class Room {
             // Cộng tiền cho người thắng vào Sổ nợ
             this.ledger[currentPlayer.id] += totalWinnerMoney;
 
+            this.removedPlayers.forEach(p => {
+                matchResults.push({
+                    id: p.id,
+                    name: p.name,
+                    cardCount: 0,
+                    cards: 0,
+                    moneyChange: 0,
+                    totalScore: this.ledger[p.id],
+                    detail: `Đã rời phòng`,
+                    isWinner: false
+                });
+            })
+
             matchResults.unshift({
                 id: currentPlayer.id,
                 name: currentPlayer.name,
-                cardCount: 0,
-                cards: [],
+                cardCount: this.lastMove?.cards ?? 0,
+                cards: this.lastMove ? this.lastMove.cards : [],
                 moneyChange: totalWinnerMoney,
                 totalScore: this.ledger[currentPlayer.id],
                 detail: 'Hết Bài',
@@ -604,7 +630,7 @@ export default class Room {
                 cards: 0,
                 moneyChange: 0,
                 totalScore: this.ledger[p.id],
-                detail:  `Đã rời phòng`,
+                detail: `Đã rời phòng`,
                 isWinner: false
             });
         })

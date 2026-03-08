@@ -66,9 +66,11 @@ const GameOverModal = memo(function GameOverModal({ user, results, onReadyNext }
                                 </div>
 
                                 {/* DÒNG 2: LẬT BÀI MINH BẠCH (Chỉ hiện cho người thua) */}
-                                {!r.isWinner && r.cards && r.cards.length > 0 && (
+                                {r.cards && r.cards.length > 0 && (
                                     <div id={`result-cards-container-${r.id}`} className="mt-3 pt-3 border-t border-zinc-700/50 flex flex-col gap-1.5">
-                                        <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Bài còn lại ({r.cardCount} lá):</span>
+                                        <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
+                                            {isWinner ? `Bài vừa đánh:` : `Bài còn lại (${r.cardCount} lá):`}
+                                        </span>
 
                                         {/* Thẻ cha bọc toàn bộ các lá bài */}
                                         <div className="flex w-full max-w-full">

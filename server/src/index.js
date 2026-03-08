@@ -192,7 +192,7 @@ io.on('connection', (socket) => {
             if (player) {
                 io.to(code).emit('NOTIFICATION', { message: `${socket.playerName} bị rớt mạng`, type: 'loading' });
                 player.status = "OFFLINE"
-                if (room.hostId === socket.playerId) room.hostId = room.players.find(p => p.id != socket.playerId).id;
+                if (room.hostId === socket.playerId && room.players.length > 1) room.hostId = room.players.find(p => p.id != socket.playerId).id;
                 io.to(code).emit('ROOM_UPDATE', room.getSafeRoomData());
 
                 const timeoutHandleDisconnect = setTimeout(() => {
