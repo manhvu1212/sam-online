@@ -57,7 +57,9 @@ function App() {
   }
 
   return (
-    <div className="w-[100dvw] h-[100dvh] overflow-hidden overscroll-none"
+    <div className="w-[100dvw] h-[100dvh] overflow-hidden overscroll-none
+                        [@media(display-mode:standalone)]:pt-[50px]
+                        [@media(display-mode:standalone)]:pb-[16px]"
     >
       <div className="relative w-full h-full">
         <Toaster position="top-center" reverseOrder={false} />
