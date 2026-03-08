@@ -63,9 +63,7 @@ function App() {
     >
       <div className="relative w-full h-full">
         <Toaster position="top-center" reverseOrder={false}
-          containerStyle={{
-            top: 'max(env(safe-area-inset-top), 50px)'
-          }}
+          containerClassName="[@media(display-mode:standalone)]:!top-[50px]"
         />
 
         {/* Nếu có room thì render Board, nếu không thì render Lobby */}
