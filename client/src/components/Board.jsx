@@ -50,8 +50,8 @@ export default function Board({ socket, room, user, myCards }) {
     // --- 4. RENDER GIAO DIỆN CHÍNH ---
     return (
         <div className="w-[100dvw] h-[100dvh] overflow-hidden overscroll-none
-                        pt-[max(env(safe-area-inset-top),50px)]
-                        pb-[max(env(safe-area-inset-bottom),16px)]
+                        mt-[max(env(safe-area-inset-top),50px)]
+                        mb-[max(env(safe-area-inset-bottom),16px)]
                         bg-[#0a0a0c] text-zinc-200 
                         flex flex-col"
         >
