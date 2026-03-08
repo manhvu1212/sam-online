@@ -69,7 +69,7 @@ const GameOverModal = memo(function GameOverModal({ user, results, onReadyNext }
                                 {r.cards && r.cards.length > 0 && (
                                     <div id={`result-cards-container-${r.id}`} className="mt-3 pt-3 border-t border-zinc-700/50 flex flex-col gap-1.5">
                                         <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
-                                            {isWinner ? `Bài vừa đánh:` : `Bài còn lại (${r.cardCount} lá):`}
+                                            {r.isWinner ? `Bài vừa đánh:` : `Bài còn lại (${r.cardCount} lá):`}
                                         </span>
 
                                         {/* Thẻ cha bọc toàn bộ các lá bài */}
