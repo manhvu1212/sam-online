@@ -51,7 +51,7 @@ export default function Lobby({ socket, user }) {
     };
 
     return (
-        <div className="w-full h-[100dvh] overflow-hidden overscroll-none
+        <div className="w-full h-full overflow-hidden overscroll-none
                         flex flex-col items-center justify-center bg-zinc-950 text-zinc-200 
                         relative"
         >

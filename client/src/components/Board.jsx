@@ -49,64 +49,59 @@ export default function Board({ socket, room, user, myCards }) {
 
     // --- 4. RENDER GIAO DIỆN CHÍNH ---
     return (
-        <div className="w-[100dvw] h-[100dvh] overflow-hidden overscroll-none
-                        [@media(display-mode:standalone)]:pt-[50px]
-                        [@media(display-mode:standalone)]:pb-[16px]
-                        bg-[#0a0a0c] text-zinc-200"
+        <div className="relative w-full h-full flex flex-col bg-[#0a0a0c] text-zinc-200"
         >
-            <div className="relative w-full h-full flex flex-col">
 
-                <RoomHeader code={room.code} bet={room.settings.bet} onQuitGame={handleQuitGame} />
+            <RoomHeader code={room.code} bet={room.settings.bet} onQuitGame={handleQuitGame} />
 
-                <div className="flex-1 min-h-0 pt-15 flex flex-col items-center justify-center z-10 pointer-events-none">
-                    <CenterStage
-                        socket={socket}
-                        room={room}
-                        user={user}
-                        skipSam={skipSam}
-                        onStartGame={handleStartGame}
-                    />
-                </div>
+            <div className="flex-1 min-h-0 pt-15 flex flex-col items-center justify-center z-10 pointer-events-none">
+                <CenterStage
+                    socket={socket}
+                    room={room}
+                    user={user}
+                    skipSam={skipSam}
+                    onStartGame={handleStartGame}
+                />
+            </div>
 
-                <div className="shrink-0 w-full max-h-[30dvh]
+            <div className="shrink-0 w-full max-h-[30dvh]
                             pt-5 pb-3 flex flex-col items-center justify-start 
                             pointer-events-none z-30
                             "
-                >
-                    <ActionBar
-                        socket={socket}
-                        roomStatus={room.status}
-                        skipSam={skipSam}
-                        onSkipSam={handleSkipSam}
-                        onRequestSam={handleRequestSam}
-                        isMyTurn={isMyTurn}
+            >
+                <ActionBar
+                    socket={socket}
+                    roomStatus={room.status}
+                    skipSam={skipSam}
+                    onSkipSam={handleSkipSam}
+                    onRequestSam={handleRequestSam}
+                    isMyTurn={isMyTurn}
+                    lastMove={room.lastMove}
+                    isValidMove={isValidMove}
+                    onPassTurn={handlePassTurn}
+                    onPlayCards={handlePlayCards}
+                />
+
+                <div className="pointer-events-auto flex justify-center w-full px-4 max-w-xl">
+                    <PlayerHand
+                        myCards={myCards}
                         lastMove={room.lastMove}
+                        roomStatus={room.status}
+                        selectedCards={selectedCards}
+                        setSelectedCards={setSelectedCards}
                         isValidMove={isValidMove}
-                        onPassTurn={handlePassTurn}
-                        onPlayCards={handlePlayCards}
                     />
-
-                    <div className="pointer-events-auto flex justify-center w-full px-4 max-w-xl">
-                        <PlayerHand
-                            myCards={myCards}
-                            lastMove={room.lastMove}
-                            roomStatus={room.status}
-                            selectedCards={selectedCards}
-                            setSelectedCards={setSelectedCards}
-                            isValidMove={isValidMove}
-                        />
-                    </div>
                 </div>
-
-                {/* MÀN HÌNH TỔNG KẾT (CHỈ HIỆN KHI CÓ KẾT QUẢ VÀ GAME ENDED) */}
-                {room.status == 'ENDED' && !isReady &&
-                    <GameOverModal
-                        user={user}
-                        results={gameResults}
-                        onReadyNext={handleReadyNext} // Thay onRestart bằng onReadyNext
-                    />
-                }
             </div>
+
+            {/* MÀN HÌNH TỔNG KẾT (CHỈ HIỆN KHI CÓ KẾT QUẢ VÀ GAME ENDED) */}
+            {room.status == 'ENDED' && !isReady &&
+                <GameOverModal
+                    user={user}
+                    results={gameResults}
+                    onReadyNext={handleReadyNext} // Thay onRestart bằng onReadyNext
+                />
+            }
         </div>
     );
 }

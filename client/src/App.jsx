@@ -57,16 +57,19 @@ function App() {
   }
 
   return (
-    <>
-      <Toaster position="top-center" reverseOrder={false} />
+    <div className="w-[100dvw] h-[100dvh] overflow-hidden overscroll-none"
+    >
+      <div className="relative w-full h-full">
+        <Toaster position="top-center" reverseOrder={false} />
 
-      {/* Nếu có room thì render Board, nếu không thì render Lobby */}
-      {room ? (
-        <Board socket={socket} room={room} user={user} myCards={myCards} />
-      ) : (
-        <Lobby socket={socket} user={user} />
-      )}
-    </>
+        {/* Nếu có room thì render Board, nếu không thì render Lobby */}
+        {room ? (
+          <Board socket={socket} room={room} user={user} myCards={myCards} />
+        ) : (
+          <Lobby socket={socket} user={user} />
+        )}
+      </div>
+    </div >
   );
 }
 
