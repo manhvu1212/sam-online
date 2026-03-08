@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import useWakeLock from '../hooks/useWakeLock';
-import { playFeedback } from './SoundAndHaptics';
+import { playFeedback } from '../hooks/SoundAndHaptics';
 import GameLogic from '../utils/GameLogic';
 import RoomHeader from './RoomHeader';
 import CenterStage from './CenterStage';
