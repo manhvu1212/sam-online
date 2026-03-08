@@ -392,7 +392,10 @@ export default class Room {
             // Phát loa thông báo cho cả phòng biết
             io.to(this.code).emit('NOTIFICATION', {
                 message: `BỤP! ${currentPlayer.name} vừa CHẶT HEO của ${this.players.find(p => p.id === victimId)?.name}!`,
-                type: 'success'
+                type: 'success',
+                config: {
+                    duration: 3000
+                }
             });
         }
 

@@ -35,13 +35,13 @@ function App() {
 
     socket.on('NOTIFICATION', (data) => {
       if (data.type === 'success') {
-        toast.success(data.message, { ...data.config, duration: 2000 });
+        toast.success(data.message, { duration: 2000, ...data.config });
       } else if (data.type == 'loading') {
-        toast.loading(data.message, { ...data.config, duration: 2000 });
+        toast.loading(data.message, { duration: 2000, ...data.config });
       } else if (data.type == 'error') {
-        toast.error(data.message, { ...data.config, duration: 2000 });
+        toast.error(data.message, { duration: 2000, ...data.config });
       } else {
-        toast.custom(data.message, { ...data.config, duration: 2000 });
+        toast.custom(data.message, { duration: 2000, ...data.config });
       }
     });
 
