@@ -373,13 +373,10 @@ export default class Room {
         currentPlayer.cards = currentPlayer.cards.filter(c =>
             !playedCards.find(pc => pc.rank === c.rank && pc.suit === c.suit)
         );
+        // 1.1. Cập nhật bài trên tay cho Client (UPDATE_HAND)
+        io.to(currentPlayer.socketId).emit('UPDATE_HAND', currentPlayer.cards);
 
-        if (this.samPlayerId && playerId !== this.samPlayerId) {
-            this.handleKetThucSam(this.samPlayerId, playerId, false, io);
-            return;
-        }
-
-        // --- LOGIC: TỨ QUÝ CHẶT HEO ---
+        // 2. LOGIC: TỨ QUÝ CHẶT HEO
         const newCombo = GameLogic.getCombo(playedCards);
         const lastCombo = this.lastMove ? GameLogic.getCombo(this.lastMove.cards) : null;
 
@@ -398,22 +395,26 @@ export default class Room {
             });
         }
 
-        // 2. Cập nhật bài trên bàn
+        // 3. Cập nhật bài trên bàn
         this.lastMove = {
             playerId: playerId,
             cards: playedCards
         };
 
-        // 3. Cập nhật bài trên tay cho Client (UPDATE_HAND)
-        io.to(currentPlayer.socketId).emit('UPDATE_HAND', currentPlayer.cards);
+        // 4. Kiểm tra chặn SÂM
+        if (this.samPlayerId && playerId !== this.samPlayerId) {
+            this.handleKetThucSam(this.samPlayerId, playerId, false, io);
+            return;
+        }
 
+        // 5. Kiểm tra BAO
         if (currentPlayer.cards.length === 1) {
             currentPlayer.isBao = true
             socket.to(this.code).emit('NOTIFICATION', { message: `${currentPlayer.name} BAO`, type: 'success' });
             io.to(this.code).emit('ROOM_UPDATE', this.getSafeRoomData());
         }
 
-        // 3. KIỂM TRA THẮNG CUỘC & TÍNH TIỀN (THEO LUẬT LÀNG)
+        // 4. KIỂM TRA THẮNG CUỘC & TÍNH TIỀN (THEO LUẬT LÀNG)
         if (currentPlayer.cards.length === 0) {
             if (this.samPlayerId && playerId === this.samPlayerId) {
                 // Người báo Sâm đã đánh hết bài an toàn
