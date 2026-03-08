@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import useWakeLock from '../hooks/useWakeLock';
+import { playFeedback } from './SoundAndHaptics';
 import GameLogic from '../utils/GameLogic';
 import RoomHeader from './RoomHeader';
 import CenterStage from './CenterStage';
@@ -39,6 +40,7 @@ export default function Board({ socket, room, user, myCards }) {
 
     const handlePlayCards = useCallback(() => {
         if (!isValidMove) return;
+        playFeedback()
         socket.emit('PLAY_CARDS', { code: room.code, cards: selectedCards });
         setSelectedCards([]);
     }, [isValidMove, socket, room.code, selectedCards]);
