@@ -117,6 +117,7 @@ export default class Room {
             this.waitingPlayers.splice(waitingPlayerIndex, 1)
         }
         socket.leave(this.code);
+        socket.emit('UPDATE_HAND', []);
         io.to(this.code).emit("NOTIFICATION", { message: `${socket.playerName} vừa rời khởi phòng` })
         io.to(this.code).emit('ROOM_UPDATE', this.getSafeRoomData());
     }

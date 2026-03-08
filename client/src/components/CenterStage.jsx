@@ -18,18 +18,6 @@ const CenterStage = memo(function CenterStage({
         return [...room.players.slice(myIndex), ...room.players.slice(0, myIndex)];
     }, [room.players, user.id]);
 
-    const currentLayout = useMemo(() => {
-        const bottomPos = "bottom-[320px] left-1/2 -translate-x-1/2";
-        const layouts = {
-            1: [bottomPos],
-            2: [bottomPos, "top-16 left-1/2 -translate-x-1/2"],
-            3: [bottomPos, "top-24 left-[25%] -translate-x-1/2", "top-24 right-[25%] translate-x-1/2"],
-            4: [bottomPos, "top-[45%] left-4 -translate-y-1/2", "top-16 left-1/2 -translate-x-1/2", "top-[45%] right-4 -translate-y-1/2"],
-            5: [bottomPos, "top-[45%] left-4 -translate-y-1/2", "top-16 left-[30%] -translate-x-1/2", "top-16 right-[30%] translate-x-1/2", "top-[45%] right-4 -translate-y-1/2"]
-        };
-        return layouts[rotatedPlayers.length] || layouts[1];
-    }, [rotatedPlayers.length]);
-
     const playerPosition = useMemo(() => {
 
         const positionClass = {
