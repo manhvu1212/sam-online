@@ -157,10 +157,15 @@ io.on('connection', (socket) => {
     });
 
     socket.on('QUIT_GAME', (code) => {
-        if (rooms[code]) {
-            rooms[code].removePlayer(socket.playerId, io, socket);
+        const room = rooms[code]
+        if (room) {
+            if (room.status === 'SAM_WAITING' || room.status === 'PLAYING') {
+                socket.emit('NOTIFICATION', { message: `Không được rời bàn khi đang chơi`, type: 'error' });
+            } else {
+                room.removePlayer(socket.playerId, io, socket);
+                socket.emit('ROOM_UPDATE', null)
+            }
         }
-        socket.emit('ROOM_UPDATE', null)
     });
 
     socket.on('REQUEST_SAM', (code) => {
@@ -229,8 +234,10 @@ io.on('connection', (socket) => {
                 waitingPlayer.status = "OFFLINE"
                 const timeoutHandleDisconnect = setTimeout(() => {
                     const room = rooms[code]
-                    const waitingPlayerIndex = room.waitingPlayers.findIndex(p.id == socket.playerId)
-                    room.waitingPlayers.splice(waitingPlayerIndex, 1)
+                    if (room) {
+                        const waitingPlayerIndex = room.waitingPlayers.findIndex(p.id == socket.playerId)
+                        room.waitingPlayers.splice(waitingPlayerIndex, 1)
+                    }
                     disconnectTimers.delete(socket.playerId);
                 }, 30 * 1000)
                 disconnectTimers.set(socket.playerId, timeoutHandleDisconnect);
