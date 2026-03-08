@@ -605,8 +605,8 @@ export default class Room {
                 matchResults.push({
                     id: p.id,
                     name: p.name,
-                    cardCount: p.cards.length,
-                    cards: p.cards,
+                    cardCount: (isBlocker && this.lastMove ? this.lastMove.cards : p.cards).length,
+                    cards: isBlocker && this.lastMove ? this.lastMove.cards : p.cards,
                     moneyChange: penaltyMoney,
                     totalScore: this.ledger[p.id],
                     detail: isBlocker ? `BẮT SÂM (+${sam} lá)` : `Được đền Sâm (+${sam} lá)`,
@@ -639,8 +639,8 @@ export default class Room {
         matchResults.unshift({
             id: samPlayerId,
             name: samPlayer.name,
-            cardCount: samPlayer.cards.length,
-            cards: samPlayer.cards,
+            cardCount: (isSuccess && this.lastMove ? this.lastMove.cards : samPlayer.cards).length,
+            cards: isSuccess && this.lastMove ? this.lastMove.cards : samPlayer.cards,
             moneyChange: isSuccess ? totalMoneyExchange : -totalMoneyExchange,
             totalScore: this.ledger[samPlayerId],
             detail: isSuccess ? 'THẮNG SÂM' : 'BỊ BẮT SÂM (ĐỀN LÀNG)',
