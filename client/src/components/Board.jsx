@@ -40,7 +40,6 @@ export default function Board({ socket, room, user, myCards }) {
 
     const handlePlayCards = useCallback(() => {
         if (!isValidMove) return;
-        playFeedback()
         socket.emit('PLAY_CARDS', { code: room.code, cards: selectedCards });
         setSelectedCards([]);
     }, [isValidMove, socket, room.code, selectedCards]);
