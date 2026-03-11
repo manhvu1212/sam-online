@@ -13,6 +13,7 @@ body {
 
   /* Cấm các trình duyệt khác làm điều tương tự */
   text-size-adjust: 100%;
+  overscroll-behavior: none;
 }
 
 body {
