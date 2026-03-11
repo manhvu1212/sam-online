@@ -177,8 +177,8 @@ io.on('connection', (socket) => {
             if (room.status === 'SAM_WAITING' || room.status === 'PLAYING') {
                 socket.emit('NOTIFICATION', { message: `Không được rời bàn khi đang chơi`, type: 'error' });
             } else {
-                socket.roomCode = null
                 logger.info(`Thoát khỏi phòng.`, socket);
+                socket.roomCode = null
                 room.removePlayer(socket.playerId, io, socket);
                 socket.emit('ROOM_UPDATE', null)
                 socket.emit('GAME_DEAL_CARDS', []);
