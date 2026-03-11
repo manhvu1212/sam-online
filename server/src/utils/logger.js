@@ -5,7 +5,7 @@ const { combine, timestamp, printf, colorize } = format;
 
 // Định dạng hiển thị log
 const logFormat = printf(({ level, message, timestamp, roomCode, playerId, playerName }) => {
-    return `${timestamp} [${level}] [${roomCode}] [${playerId}] [${playerName}]: ${message}`;
+    return `${timestamp} [${level}] [${roomCode || ''}] [${playerId || ''}] [${playerName || ''}]: ${message}`;
 });
 
 // Cấu hình xoay vòng file log
