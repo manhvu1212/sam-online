@@ -319,38 +319,40 @@ export default class Room {
         clearInterval(this.timer); // Xóa đồng hồ cũ nếu có
 
         const currentPlayer = this.players.find(p => p.id == this.currentTurnId);
-        let timeLeft = currentPlayer.status == "ONLINE" ? 30 : 10; // 20 giây cho mỗi lượt đánh
+        if (currentPlayer) {
+            let timeLeft = currentPlayer.status == "ONLINE" ? 30 : 10; // 20 giây cho mỗi lượt đánh
 
-        // Báo cho Client biết đến lượt ai và thời gian bao nhiêu
-        io.to(this.code).emit('TURN_UPDATE', {
-            playerId: currentPlayer.id,
-            timeout: timeLeft
-        });
+            // Báo cho Client biết đến lượt ai và thời gian bao nhiêu
+            io.to(this.code).emit('TURN_UPDATE', {
+                playerId: currentPlayer.id,
+                timeout: timeLeft
+            });
 
-        // Bắt đầu đếm ngược thời gian đánh bài
-        this.timer = setInterval(() => {
-            timeLeft--;
-            io.to(this.code).emit('SAM_TIMER', timeLeft);
+            // Bắt đầu đếm ngược thời gian đánh bài
+            this.timer = setInterval(() => {
+                timeLeft--;
+                io.to(this.code).emit('SAM_TIMER', timeLeft);
 
-            if (timeLeft <= 0) {
-                clearInterval(this.timer);
+                if (timeLeft <= 0) {
+                    clearInterval(this.timer);
 
-                // --- LOGIC MỚI: KIỂM TRA QUYỀN MỞ VÒNG ---
-                if (!this.lastMove) {
-                    // TRƯỜNG HỢP 1: Bắt đầu vòng mới (trên bàn đang trống)
-                    // Không được phép bỏ lượt. Ép hệ thống tự đánh lá bài NHỎ NHẤT trên tay.
-                    const smallestCard = currentPlayer.cards.reduce((min, card) => card.rank < min.rank ? card : min, currentPlayer.cards[0]);
+                    // --- LOGIC MỚI: KIỂM TRA QUYỀN MỞ VÒNG ---
+                    if (!this.lastMove) {
+                        // TRƯỜNG HỢP 1: Bắt đầu vòng mới (trên bàn đang trống)
+                        // Không được phép bỏ lượt. Ép hệ thống tự đánh lá bài NHỎ NHẤT trên tay.
+                        const smallestCard = currentPlayer.cards.reduce((min, card) => card.rank < min.rank ? card : min, currentPlayer.cards[0]);
 
-                    // Giả lập hành động tự động ném lá bài nhỏ nhất ra bàn
-                    this.handlePlayCards(currentPlayer.id, [smallestCard], io, socket);
+                        // Giả lập hành động tự động ném lá bài nhỏ nhất ra bàn
+                        this.handlePlayCards(currentPlayer.id, [smallestCard], io, socket);
 
-                } else {
-                    // TRƯỜNG HỢP 2: Đang nối vòng (Đã có người đánh trước đó)
-                    // Tự động ép Bỏ Lượt
-                    this.handlePass(currentPlayer.id, io, socket);
+                    } else {
+                        // TRƯỜNG HỢP 2: Đang nối vòng (Đã có người đánh trước đó)
+                        // Tự động ép Bỏ Lượt
+                        this.handlePass(currentPlayer.id, io, socket);
+                    }
                 }
-            }
-        }, 1000);
+            }, 1000);
+        }
     }
 
     handlePlayCards(playerId, playedCards, io, socket) {

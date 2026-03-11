@@ -1,3 +1,4 @@
+import logger from './utils/logger.js';
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -30,8 +31,6 @@ io.use((socket, next) => {
 });
 
 io.on('connection', (socket) => {
-    console.log(`[+] Khách VIP kết nối: Socket=${socket.id} | PlayerID=${socket.playerId}`);
-
     // --- 1. KIỂM TRA & TẠO DỮ LIỆU NGƯỜI CHƠI TRONG SQLITE ---
     let user = db.prepare('SELECT * FROM players WHERE id = ?').get(socket.playerId);
 
@@ -44,6 +43,8 @@ io.on('connection', (socket) => {
 
     // Lưu thông tin vào bộ nhớ tạm của socket để truy xuất nhanh
     socket.playerName = user.name;
+
+    logger.info(`Đã kết nối`, socket);
 
     // Trả thông tin hồ sơ về cho trình duyệt hiển thị
     socket.emit('USER_INFO', user);
@@ -60,6 +61,7 @@ io.on('connection', (socket) => {
         const player = room.players.find(p => p.id === socket.playerId);
 
         if (player) {
+            socket.roomCode = code
             // Cập nhật lại socketId mới cho người chơi này để server biết đường gửi bài
             player.socketId = socket.id;
             player.status = "ONLINE";
@@ -69,18 +71,23 @@ io.on('connection', (socket) => {
             // Gửi lại tình trạng phòng và bài trên tay cho họ
             io.to(code).emit('ROOM_UPDATE', room.getSafeRoomData());
             socket.emit('GAME_DEAL_CARDS', player.cards);
-            console.log(`[*] Khách ${socket.playerName} vừa F5 và vào lại bàn ${code}`);
             isPlaying = true
+            logger.info(`Đang vào lại phòng`, socket);
+
             break;
         }
 
         const waitingPlayer = room.waitingPlayers.find(p => p.id === socket.playerId);
         if (waitingPlayer) {
+            socket.roomCode = code
+
             waitingPlayer.socketId = socket.id;
             waitingPlayer.status = "ONLINE";
             socket.join(code);
             socket.emit('ROOM_UPDATE', room.getSafeRoomData());
             isPlaying = true
+            logger.info(`Đang vào lại phòng`, socket);
+
             break;
         }
     }
@@ -117,6 +124,8 @@ io.on('connection', (socket) => {
                 status: "ONLINE"
             };
             room.addPlayer(newPlayer, io, socket)
+            socket.roomCode = code
+            logger.info(`Đã tạo phòng mới`, socket);
 
             break
         }
@@ -130,6 +139,9 @@ io.on('connection', (socket) => {
         // Chống vào 2 lần bằng 1 trình duyệt
         if (room.players.find(p => p.id === socket.playerId)) return;
         if (room.waitingPlayers.find(p => p.id === socket.playerId)) return;
+
+        socket.roomCode = code
+
         const newPlayer = {
             id: socket.playerId,
             socketId: socket.id,
@@ -142,8 +154,10 @@ io.on('connection', (socket) => {
             socket.emit('NOTIFICATION', { message: 'Ván đấu đang diễn ra! Bạn ngồi chờ tí nhé', type: 'error' });
             socket.to(code).emit('NOTIFICATION', { message: `${newPlayer.name} đang ở phòng chờ`, type: 'loading' });
             room.addWaitingPlayer(newPlayer, io, socket)
+            logger.info(`Tham gia vào phòng. Chờ ván đấu kết thúc.`, socket);
         } else {
             room.addPlayer(newPlayer, io, socket)
+            logger.info(`Tham gia vào phòng. Bắt đầu ngay.`, socket);
         }
         const removedPlayerIndex = room.removedPlayers.findIndex(p => p.id == newPlayer.id)
         if (removedPlayerIndex >= 0) {
@@ -153,6 +167,7 @@ io.on('connection', (socket) => {
 
     // --- CÁC SỰ KIỆN GAME (Gọi vào Class Room) ---
     socket.on('START_GAME', (code) => {
+        logger.info(`Bắt đầu trận đấu đầu tiên.`, socket);
         if (rooms[code] && rooms[code].hostId === socket.playerId) rooms[code].startDeal(io, socket);
     });
 
@@ -162,45 +177,67 @@ io.on('connection', (socket) => {
             if (room.status === 'SAM_WAITING' || room.status === 'PLAYING') {
                 socket.emit('NOTIFICATION', { message: `Không được rời bàn khi đang chơi`, type: 'error' });
             } else {
+                socket.roomCode = null
+                logger.info(`Thoát khỏi phòng.`, socket);
                 room.removePlayer(socket.playerId, io, socket);
                 socket.emit('ROOM_UPDATE', null)
+                socket.emit('GAME_DEAL_CARDS', []);
+
+                if (room.players.length <= 0) {
+                    clearInterval(room.timer);
+                    delete rooms[code];
+                }
             }
         }
     });
 
     socket.on('REQUEST_SAM', (code) => {
+        logger.info(`Xin sâm.`, socket);
         if (rooms[code]) rooms[code].handleSam(socket.playerId, io, socket);
     });
 
     socket.on('SKIP_SAM', (code) => {
+        logger.info(`Bỏ qua sâm.`, socket);
         if (rooms[code]) rooms[code].handleSkipSam(socket.playerId, io, socket);
     });
 
     socket.on('PLAY_CARDS', (data) => {
+        logger.info(`Đánh. ${(data?.cards ?? []).map(c => `${c.rank}_${c.suit}`).join()}`, socket);
         if (rooms[data.code]) rooms[data.code].handlePlayCards(socket.playerId, data.cards, io, socket);
     });
 
     socket.on('PASS_TURN', (code) => {
+        logger.info(`Bỏ lượt đánh.`, socket);
         if (rooms[code]) rooms[code].handlePass(socket.playerId, io, socket);
     });
 
     socket.on('READY_NEXT', (code) => {
+        logger.info(`Sẵn sàng cho ván tiếp theo.`, socket);
         if (rooms[code]) rooms[code].handleReady(socket.playerId, io, socket);
     });
 
     // --- XỬ LÝ SỰ CỐ: THOÁT GAME ---
     socket.on('disconnect', () => {
-        console.log(`[-] Socket ngắt kết nối: ${socket.id}`);
+        logger.warn(`Bị ngắt kết nối.`, socket);
+
         for (const code in rooms) {
             const room = rooms[code];
             const player = room.players.find(p => p.id === socket.playerId);
             if (player) {
                 io.to(code).emit('NOTIFICATION', { message: `${socket.playerName} bị rớt mạng`, type: 'loading' });
                 player.status = "OFFLINE"
-                if (room.hostId === socket.playerId && room.players.length > 1) room.hostId = room.players.find(p => p.id != socket.playerId).id;
+
+                if (room.hostId === socket.playerId) {
+                    const newHost = room.players.find(p => p.status == "ONLINE" && p.id != socket.playerId);
+                    if (newHost) {
+                        logger.warn(`Đổi host cho ${newHost.name} (${newHost.id}).`, socket);
+                        room.hostId = newHost.id
+                    }
+                }
                 io.to(code).emit('ROOM_UPDATE', room.getSafeRoomData());
 
                 const timeoutHandleDisconnect = setTimeout(() => {
+                    logger.warn(`Không thể kết nối lại. Xóa khỏi phòng.`, socket);
                     const room = rooms[code]
                     if (room) {
                         if (room.players.length <= 1) {
@@ -215,7 +252,7 @@ io.on('connection', (socket) => {
                                 io.to(code).emit('ROOM_UPDATE', room.getSafeRoomData());
 
                                 // NẾU TẤT CẢ NGƯỜI CHƠI CON LẠI ĐÃ READY -> TỰ ĐỘNG CHIA BÀI!
-                                if (room.players.every(p => p.isReady)) {
+                                if (room.players.every(p => p.status == "ONLINE" && p.isReady)) {
                                     room.startDeal(io, socket);
                                 }
                             }
@@ -233,9 +270,10 @@ io.on('connection', (socket) => {
             if (waitingPlayer) {
                 waitingPlayer.status = "OFFLINE"
                 const timeoutHandleDisconnect = setTimeout(() => {
+                    logger.warn(`Không thể kết nối lại. Xóa khỏi phòng.`, socket);
                     const room = rooms[code]
                     if (room) {
-                        const waitingPlayerIndex = room.waitingPlayers.findIndex(p.id == socket.playerId)
+                        const waitingPlayerIndex = room.waitingPlayers.findIndex(p => p.id == socket.playerId)
                         room.waitingPlayers.splice(waitingPlayerIndex, 1)
                     }
                     disconnectTimers.delete(socket.playerId);
@@ -248,5 +286,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
-    console.log(`🚀 VIP Sâm Lốc Server đang chạy tại cổng ${PORT}`);
+    logger.info(`Sâm Lốc Server đang chạy tại cổng ${PORT}`);
 });
